@@ -1,0 +1,77 @@
+default_language_version:
+  python: python3.8
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: fix-encoding-pragma
+        args: [ --remove ]
+      - id: mixed-line-ending
+        args: [ --fix, lf ]
+      - id: trailing-whitespace
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 2.1.5
+    hooks:
+      - id: bundler-audit
+      - id: fasterer
+      - id: forbid-binary
+      - id: reek
+      - id: require-ascii
+      - id: rubocop
+      - id: script-must-have-extension
+      - id: script-must-not-have-extension
+      - id: shellcheck
+      - id: shfmt
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.7.0
+    hooks:
+      - id: python-check-blanket-noqa
+      - id: python-check-mock-methods
+      - id: python-no-eval
+      - id: python-no-log-warn
+  - repo: https://github.com/asottile/reorder_python_imports
+    rev: v2.3.6
+    hooks:
+      - id: reorder-python-imports
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.4
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-builtins==1.5.3
+          - flake8-comprehensions==3.3.1
+          - flake8-bugbear==20.11.1
+          - flake8-eradicate==1.0.0
+  - repo: https://github.com/ambv/black
+    rev: 97b8496d67741a10f30eefbb3d6c97a0e541fba4 # Use specific commit-id instead of `master`.
+    hooks:
+      - id: black
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.10.0
+    hooks:
+      - id: pyupgrade
+        args: [ --py38-plus ]
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.0
+    hooks:
+      - id: bandit
+        args: [ -c, bandit.yml ]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.800
+    hooks:
+      - id: mypy
+        name: mypy-infra
+        files: ^infra/
+        args: [ --config-file, shpyx/mypy.ini ]
+        additional_dependencies: [ ]

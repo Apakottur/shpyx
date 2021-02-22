@@ -1,0 +1,13 @@
+[flake8]
+ignore =
+    #######################################################
+    # Ignored as we rely on black for formatting our code #
+    #######################################################
+    E203, # Whitespace before ':'
+    E302, # Expected 2 blank lines, found 0
+    E303, # Too many blank lines
+    E501, # Line too long
+    W503, # Line break occurred before a binary operator
+
+max-complexity = 20
+max-line-length = 120
