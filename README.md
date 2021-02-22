@@ -12,7 +12,7 @@ TODO
 
 ## Motivation
 Running shell commands in Python is often useful when the user is interested in combining shell and Python logic, or 
-manging the outcome of shell commands in Python.
+managing the outcome of shell commands in Python.
 
 The Python standard library provides a simple way of doing so via the `subprocess` module:
 ```python
