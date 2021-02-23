@@ -54,7 +54,7 @@ repos:
           - flake8-bugbear==20.11.1
           - flake8-eradicate==1.0.0
   - repo: https://github.com/ambv/black
-    rev: 97b8496d67741a10f30eefbb3d6c97a0e541fba4 # Use specific commit-id instead of `master`.
+    rev: e1c86f987eca7e532f7d69f7ff4b9c70432fabbf # Use `master` commit until `skip-magic-trailing-comma` is released.
     hooks:
       - id: black
   - repo: https://github.com/asottile/pyupgrade
