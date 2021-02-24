@@ -56,3 +56,10 @@ The call to `subprocess.Popen` in this library uses `shell=True` which means tha
 created. Untrusted commands should be checked twice before being run.
 
 For more info, see [security considerations](https://docs.python.org/3/library/subprocess.html#security-considerations).
+
+## Contributing
+
+Running the linters:
+```shell
+docker-compose up --build linters
+```
