@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  linters:
+    build:
+      context: .
+      dockerfile: ./linters/Dockerfile
+    volumes:
+      - .:/src
