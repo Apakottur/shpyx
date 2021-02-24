@@ -1,6 +1,6 @@
 import setuptools
 
-version = "0.0.2"
+version = "0.0.4"
 
 setuptools.setup(
     name="shpyx",
@@ -16,6 +16,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    package_data={"shpyx": ["py.typed"]},
     packages=setuptools.find_packages(),
     python_requires=">=3.6",
 )

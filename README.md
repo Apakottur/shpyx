@@ -7,8 +7,25 @@ pip install shpyx
 ```
 
 ## Usage
-TODO
+Run a command:
+```
+>>> import shpyx
+>>> shpyx.run("echo 'Hello world'")
+ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
+```
 
+Run a command and print the output:
+```
+>>> shpyx.run("echo 'Hello world'", log_output=True)
+Hello world
+ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
+```
+
+Get partial output during long commands:
+```
+>>> result = shpyx.run("echo 'Hello'; sleep 10000", log_output=True)
+Hello
+```
 
 ## Motivation
 Running shell commands in Python is often useful when the user is interested in combining shell and Python logic, or
@@ -24,11 +41,10 @@ cmd_stdout, cmd_stderr = p.communicate()
 ```
 
 While this is sufficient for many cases, we might also want to:
-1. Inspect the return code
-2. Handle commands that are stuck (due to blocking I/O, for example)
-3. Handle signals by the main Python process
-4. Add formatted printing of every executed cmd and it's output
-5. etc
+- Inspect the return code
+- See live command output (while it is being run)
+- Gracefully handle commands that are stuck (due to blocking I/O, for example)
+- Add formatted printing of every executed command and/or its output
 
 The goal of this project is to provide a friendly API for running shell commands, with emphasis on configurability.
 
@@ -36,12 +52,7 @@ You might also want to check out other packages that deal with similar problems,
 [bash](https://pypi.org/project/bash/) or [invoke](https://pypi.org/project/invoke/).
 
 ## Security
-One must be cautious when running shell commands from Python, as the spawned shell gains the same permissions as Python
-process.
+The call to `subprocess.Popen` in this library uses `shell=True` which means that an actual system shell is being
+created. Untrusted commands should be checked twice before being run.
 
-**Check an untrusted command twice before running it!**
-
-# Contributing
-TODO
-## Linters and tests
-TODO
+For more info, see [security considerations](https://docs.python.org/3/library/subprocess.html#security-considerations).
