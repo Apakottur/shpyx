@@ -24,7 +24,7 @@ class ShellCmdResult:
 
 
 class ShellCmdRunner:
-    def __init__(self, log_cmd=False, log_output=True, verify_return_code=True, verify_stderr=False):
+    def __init__(self, log_cmd=False, log_output=False, verify_return_code=True, verify_stderr=False):
         """
         Create a shell command runner.
 
@@ -57,7 +57,7 @@ class ShellCmdRunner:
         result.stdout += data
         result.all_output += data
 
-        if (log_output is False) and (self._log_output is False):
+        if (log_output is not True) and (self._log_output is False):
             return
 
         self._log(data)
@@ -69,7 +69,7 @@ class ShellCmdRunner:
         result.stderr += data
         result.all_output += data
 
-        if (log_output is False) and (self._log_output is False):
+        if (log_output is not True) and (self._log_output is False):
             return
 
         self._log(data)
@@ -93,7 +93,7 @@ class ShellCmdRunner:
         cmd: str,
         *,
         log_cmd: Optional[bool] = False,
-        log_output: Optional[bool] = True,
+        log_output: Optional[bool] = False,
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
     ) -> ShellCmdResult:
@@ -113,7 +113,7 @@ class ShellCmdRunner:
             except TypeError:
                 pass
             try:
-                self._add_stderr(result, p.stdout.read(), log_output)
+                self._add_stderr(result, p.stderr.read(), log_output)
             except TypeError:
                 pass
             time.sleep(0.1)
