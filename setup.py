@@ -6,7 +6,6 @@ setuptools.setup(
     name="shpyx",
     version=version,
     author="Apakottur",
-    author_email="apakottur@github.com",
     description="Configurable shell command execution in Python",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
