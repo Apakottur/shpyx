@@ -19,6 +19,7 @@ jobs:
           python-version: '3.9'
       - name: Configure and run linters
         run: |
+          sudo snap install shfmt
           python3.9 -m pip install pre-commit
           cd $GITHUB_WORKSPACE
           pre-commit run --all-files --show-diff
