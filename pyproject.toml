@@ -14,3 +14,7 @@ target-version = ['py38']
 # recent black release. It's added here so that once we upgrade to the next release, this behavior is immediately
 # enforced.
 skip-magic-trailing-comma = true
+
+[tool.isort]
+line_length = 120
+profile = 'black'
