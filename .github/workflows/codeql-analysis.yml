@@ -2,9 +2,9 @@ name: CodeQL
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
   workflow_dispatch:
 
@@ -15,11 +15,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python' ]
+        language: ["python"]
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: github/codeql-action/init@v1
-      with:
-        languages: ${{ matrix.language }}
-    - uses: github/codeql-action/analyze@v1
+      - uses: actions/checkout@v2
+      - uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/analyze@v1
