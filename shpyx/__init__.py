@@ -24,7 +24,13 @@ class ShellCmdResult:
 
 
 class ShellCmdRunner:
-    def __init__(self, log_cmd=False, log_output=False, verify_return_code=True, verify_stderr=False):
+    def __init__(
+        self,
+        log_cmd: bool = False,
+        log_output: bool = False,
+        verify_return_code: bool = True,
+        verify_stderr: bool = False,
+    ) -> None:
         """
         Create a shell command runner.
 
@@ -40,17 +46,17 @@ class ShellCmdRunner:
         self._verify_stderr = verify_stderr
 
     @staticmethod
-    def _log(msg: str):
+    def _log(msg: str) -> None:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def _maybe_log_cmd(self, cmd: str, log_cmd: Optional[bool]):
+    def _maybe_log_cmd(self, cmd: str, log_cmd: Optional[bool]) -> None:
         if (log_cmd is False) and (self._log_cmd is False):
             return
 
         self._log(f"Running: {cmd}\n")
 
-    def _add_stdout(self, result: ShellCmdResult, data: str, log_output: Optional[bool]):
+    def _add_stdout(self, result: ShellCmdResult, data: str, log_output: Optional[bool]) -> None:
         if "" == data:
             return
 
@@ -62,7 +68,7 @@ class ShellCmdRunner:
 
         self._log(data)
 
-    def _add_stderr(self, result: ShellCmdResult, data: str, log_output: Optional[bool]):
+    def _add_stderr(self, result: ShellCmdResult, data: str, log_output: Optional[bool]) -> None:
         if "" == data:
             return
 
@@ -74,13 +80,15 @@ class ShellCmdRunner:
 
         self._log(data)
 
-    def _verify_result(self, result: ShellCmdResult, verify_return_code: Optional[bool], verify_stderr: Optional[bool]):
+    def _verify_result(
+        self, result: ShellCmdResult, verify_return_code: Optional[bool], verify_stderr: Optional[bool]
+    ) -> None:
         success = True
         if verify_return_code or (verify_return_code is None and self._verify_return_code):
             success &= result.return_code == 0
 
         if verify_stderr or (verify_stderr is None and self._verify_stderr):
-            success &= result.return_code == ""
+            success &= result.stderr == ""
 
         if not success:
             raise RuntimeError(
@@ -96,7 +104,7 @@ class ShellCmdRunner:
         log_output: Optional[bool] = False,
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
-        env: dict[str, str] = None,
+        env: Optional[dict[str, str]] = None,
     ) -> ShellCmdResult:
 
         self._maybe_log_cmd(cmd, log_cmd)
