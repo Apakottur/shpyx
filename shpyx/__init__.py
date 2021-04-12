@@ -96,11 +96,14 @@ class ShellCmdRunner:
         log_output: Optional[bool] = False,
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
+        env: dict[str, str] = None,
     ) -> ShellCmdResult:
 
         self._maybe_log_cmd(cmd, log_cmd)
 
-        p = subprocess.Popen([cmd], shell=True, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(
+            [cmd], shell=True, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env
+        )
         if not (p and p.stdout and p.stderr):
             raise RuntimeError("Failed to initialize subprocess")
 
