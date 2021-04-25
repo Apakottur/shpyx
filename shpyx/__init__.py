@@ -109,8 +109,12 @@ class ShellCmdRunner:
 
         self._maybe_log_cmd(cmd, log_cmd)
 
+        final_env = os.environ.copy()
+        if env is not None:
+            final_env = os.environ.copy() | env
+
         p = subprocess.Popen(
-            [cmd], shell=True, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env
+            [cmd], shell=True, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=final_env
         )
         if not (p and p.stdout and p.stderr):
             raise RuntimeError("Failed to initialize subprocess")
