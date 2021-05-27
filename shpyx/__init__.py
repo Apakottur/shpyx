@@ -37,7 +37,7 @@ class ShellCmdRunner:
         :param log_cmd: Whether to log the executed command
         :param log_output: Whether to log the output of the command (while it is being executed)
 
-        :param verify_return_code: Whether to raise an exception if the bash return code of the command is not `0`.
+        :param verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
         :param verify_stderr: Whether to raise an exception if the command printed to stderr.
         """
         self._log_cmd = log_cmd
@@ -105,6 +105,7 @@ class ShellCmdRunner:
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
         env: Optional[dict[str, str]] = None,
+        exec_dir: Optional[str] = None,
     ) -> ShellCmdResult:
 
         self._maybe_log_cmd(cmd, log_cmd)
@@ -114,7 +115,13 @@ class ShellCmdRunner:
             final_env = os.environ.copy() | env
 
         p = subprocess.Popen(
-            [cmd], shell=True, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=final_env
+            [cmd],
+            shell=True,
+            encoding="utf-8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=final_env,
+            cwd=exec_dir,
         )
         if not (p and p.stdout and p.stderr):
             raise RuntimeError("Failed to initialize subprocess")

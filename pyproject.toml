@@ -8,12 +8,9 @@ build-backend = "setuptools.build_meta"
 [tool.black]
 
 line-length=120
-target-version = ['py38']
-
-# Note: this flag is only introduced in https://github.com/psf/black/pull/1824, which is not yet part of the most
-# recent black release. It's added here so that once we upgrade to the next release, this behavior is immediately
-# enforced.
+target-version = ['py39']
 skip-magic-trailing-comma = true
+
 
 [tool.isort]
 line_length = 120
