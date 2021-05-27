@@ -35,9 +35,12 @@ repos:
       - id: shfmt
         args: [-sr, -i 4]
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.2.1
+    rev: v2.3.0
     hooks:
       - id: prettier
+        additional_dependencies:
+          - "prettier@2.3.0"
+          - "prettier-plugin-ini@0.3.1"
 
   # PYTHON
   - repo: https://github.com/pre-commit/pygrep-hooks
@@ -54,7 +57,7 @@ repos:
       - id: isort
         args: [--settings-path, pyproject.toml]
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.0
+    rev: 3.9.1
     hooks:
       - id: flake8
         additional_dependencies:
@@ -62,14 +65,15 @@ repos:
           - flake8-comprehensions==3.4.0
           - flake8-bugbear==21.4.3
           - flake8-eradicate==1.0.0
+          - pep8-naming==0.11.1
         args: [--config, .flake8]
   - repo: https://github.com/psf/black
-    rev: d960d5d238bc8c73010a3ca5a9f316678ad91e6f # Use `master` commit until `skip-magic-trailing-comma` is released.
+    rev: 21.4b2
     hooks:
       - id: black
         args: [--config, pyproject.toml]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.12.0
+    rev: v2.14.0
     hooks:
       - id: pyupgrade
         args: [--py39-plus]
@@ -78,11 +82,11 @@ repos:
     hooks:
       - id: bandit
         args: [-c, bandit.yml]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.812
+  - repo: local
     hooks:
       - id: mypy
         name: mypy
-        files: ^shpyx/
-        args: [--config-file, shpyx/mypy.ini]
-        additional_dependencies: []
+        files: ^(backend|shared).*\.py$
+        entry: mypy
+        require_serial: true
+        language: system
