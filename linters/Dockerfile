@@ -1,6 +1,6 @@
 FROM python:3.9.4-alpine3.13
 
-RUN apk add git
+RUN apk add git gcc g++
 
 RUN python -m pip install pre-commit
 
