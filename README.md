@@ -63,7 +63,7 @@ Python a much more pleasant environment for doing the following things than a ba
 3. Flow control (loops and conditions)
 4. Output piping and manipulation
 
-A few years ago I found out that The Python standard library provides a simple way of doing so
+A few years ago I found out that the Python standard library provides a simple way of doing so
 via the `subprocess` module:
 
 ```python
