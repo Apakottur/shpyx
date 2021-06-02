@@ -1,6 +1,6 @@
 import setuptools
 
-version = "0.0.9"
+version = "0.0.10"
 
 setuptools.setup(
     name="shpyx",

@@ -187,6 +187,10 @@ class ShellCmdRunner:
         if env is not None:
             cmd_env = os.environ.copy() | env
 
+        # Prepare the execution path.
+        if exec_dir is not None:
+            exec_dir = str(exec_dir)
+
         # Initialize the subprocess wrapper.
         p = subprocess.Popen(
             [cmd],
@@ -195,7 +199,7 @@ class ShellCmdRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=cmd_env,
-            cwd=str(exec_dir),
+            cwd=exec_dir,
         )
 
         # Verify that all the pipes were properly configured.
