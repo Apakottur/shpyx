@@ -5,8 +5,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from shpyx.errors import InternalError, VerificationError
 from shpyx.result import ShellCmdResult
@@ -24,7 +23,7 @@ def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool
         # User required the action not to be taken.
         return False
     else:
-        # User did not define whether the action needs to be done, use the default.
+        # Use did not define whether the action needs to be done, use the default.
         return default_value
 
 
@@ -157,7 +156,7 @@ class ShellCmdRunner:
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
         env: Optional[dict[str, str]] = None,
-        exec_dir: Optional[Union[Path, str]] = None,
+        exec_dir: Optional[str] = None,
     ) -> ShellCmdResult:
         """
         Run the given shell command.
@@ -187,6 +186,10 @@ class ShellCmdRunner:
         if env is not None:
             cmd_env = os.environ.copy() | env
 
+        # Prepare the execution path.
+        if exec_dir is not None:
+            exec_dir = str(exec_dir)
+
         # Initialize the subprocess wrapper.
         p = subprocess.Popen(
             [cmd],
@@ -195,7 +198,7 @@ class ShellCmdRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=cmd_env,
-            cwd=str(exec_dir),
+            cwd=exec_dir,
         )
 
         # Verify that all the pipes were properly configured.
