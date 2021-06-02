@@ -82,11 +82,10 @@ repos:
     hooks:
       - id: bandit
         args: [-c, bandit.yml]
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.812
     hooks:
       - id: mypy
         name: mypy
-        files: ^.*\.py$
-        entry: mypy
-        require_serial: true
-        language: system
+        files: ^shpyx/
+        args: [--config-file, shpyx/mypy.ini]

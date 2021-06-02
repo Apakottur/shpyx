@@ -12,7 +12,7 @@ from shpyx.errors import InternalError, VerificationError
 from shpyx.result import ShellCmdResult
 
 
-def _is_action_required(user_value: Optional[bool], default_value: bool):
+def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool:
     """
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
@@ -24,7 +24,7 @@ def _is_action_required(user_value: Optional[bool], default_value: bool):
         # User required the action not to be taken.
         return False
     else:
-        # Use did not define whether the action needs to be done, use the default.
+        # User did not define whether the action needs to be done, use the default.
         return default_value
 
 
