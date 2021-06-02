@@ -86,7 +86,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        files: ^(backend|shared).*\.py$
+        files: ^.*\.py$
         entry: mypy
         require_serial: true
         language: system

@@ -5,7 +5,8 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 from shpyx.errors import InternalError, VerificationError
 from shpyx.result import ShellCmdResult
@@ -156,7 +157,7 @@ class ShellCmdRunner:
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
         env: Optional[dict[str, str]] = None,
-        exec_dir: Optional[str] = None,
+        exec_dir: Optional[Union[Path, str]] = None,
     ) -> ShellCmdResult:
         """
         Run the given shell command.
@@ -194,7 +195,7 @@ class ShellCmdRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=cmd_env,
-            cwd=exec_dir,
+            cwd=str(exec_dir),
         )
 
         # Verify that all the pipes were properly configured.
