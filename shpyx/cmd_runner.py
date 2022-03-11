@@ -70,7 +70,8 @@ class ShellCmdRunner:
         """
         Log a message to the standard output.
         """
-        sys.stdout.write(msg)
+        msg_with_carriage_returns = msg.replace("\n", "\n\r")
+        sys.stdout.write(msg_with_carriage_returns)
         sys.stdout.flush()
 
     def _maybe_log_cmd(self, cmd: str, log_cmd: Optional[bool]) -> None:
@@ -225,7 +226,7 @@ class ShellCmdRunner:
             except TypeError:
                 pass
             try:
-                stderr_data = p.stdout.read()
+                stderr_data = p.stderr.read()
             except TypeError:
                 pass
 
