@@ -70,8 +70,10 @@ class ShellCmdRunner:
         """
         Log a message to the standard output.
         """
-        msg_with_carriage_returns = msg.replace("\n", "\n\r")
-        sys.stdout.write(msg_with_carriage_returns)
+        msg = msg.replace("\n[?2004l\n[?2004h", "\n")
+        msg = msg.replace("\n", "\r\n")
+
+        sys.stdout.write(msg)
         sys.stdout.flush()
 
     def _maybe_log_cmd(self, cmd: str, log_cmd: Optional[bool]) -> None:
@@ -234,7 +236,7 @@ class ShellCmdRunner:
             self._add_stdout(result, stdout_data, log_output)
             self._add_stderr(result, stderr_data, log_output)
 
-            time.sleep(0.1)
+            time.sleep(0.01)
 
         # Get the remaining outputs and add them to the result.
         final_stdout, final_stderr = p.communicate()
