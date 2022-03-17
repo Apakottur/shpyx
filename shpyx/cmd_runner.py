@@ -66,14 +66,15 @@ class ShellCmdRunner:
         self._config = config
 
     @staticmethod
-    def _log(msg: str) -> None:
+    def _log(msg: bytes | str) -> None:
         """
         Log a message to the standard output.
         """
-        msg = msg.replace("\n[?2004l\n[?2004h", "\n")
-        msg = msg.replace("\n", "\r\n")
+        if isinstance(msg, bytes):
+            sys.stdout.buffer.write(msg)
+        else:
+            sys.stdout.write(msg)
 
-        sys.stdout.write(msg)
         sys.stdout.flush()
 
     def _maybe_log_cmd(self, cmd: str, log_cmd: Optional[bool]) -> None:
@@ -85,34 +86,34 @@ class ShellCmdRunner:
         if _is_action_required(log_cmd, self._config.log_cmd):
             self._log(f"Running: {cmd}\n")
 
-    def _add_stdout(self, result: ShellCmdResult, data: str, log_output: Optional[bool]) -> None:
+    def _add_stdout(self, result: ShellCmdResult, data: bytes | None, log_output: Optional[bool]) -> None:
         """
         Add partial stdout output to the result.
         :param result: The result object of the command.
         :param data: The partial stdout output to add.
         :param log_output: Whether to log the output, as supplied to `.run`.
         """
-        if "" == data:
+        if data is None:
             return
 
-        result.stdout += data
-        result.all_output += data
+        result.stdout += data.decode()
+        result.all_output += data.decode()
 
         if _is_action_required(log_output, self._config.log_output):
             self._log(data)
 
-    def _add_stderr(self, result: ShellCmdResult, data: str, log_output: Optional[bool]) -> None:
+    def _add_stderr(self, result: ShellCmdResult, data: bytes | None, log_output: Optional[bool]) -> None:
         """
         Add partial stderr output to the result.
         :param result: The result object of the command.
         :param data: The partial stdout output to add.
         :param log_output: Whether to log the output, as supplied to `.run`.
         """
-        if "" == data:
+        if data is None:
             return
 
-        result.stderr += data
-        result.all_output += data
+        result.stderr += data.decode()
+        result.all_output += data.decode()
 
         if _is_action_required(log_output, self._config.log_output):
             self._log(data)
@@ -196,13 +197,7 @@ class ShellCmdRunner:
 
         # Initialize the subprocess wrapper.
         p = subprocess.Popen(
-            [cmd],
-            shell=True,
-            encoding="utf-8",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=cmd_env,
-            cwd=exec_dir,
+            [cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=cmd_env, cwd=exec_dir
         )
 
         # Verify that all the pipes were properly configured.
@@ -219,8 +214,8 @@ class ShellCmdRunner:
         # Run the command.
         # The command runs in a subprocess and it's outputs are periodically checked and added to the result object.
         while p.poll() is None:
-            stdout_data = ""
-            stderr_data = ""
+            stdout_data: bytes
+            stderr_data: bytes
 
             # Poll both outputs for any new data.
             try:
