@@ -1,6 +1,6 @@
 import setuptools
 
-version = "0.0.13"
+version = "0.0.14"
 
 setuptools.setup(
     name="shpyx",
@@ -17,5 +17,5 @@ setuptools.setup(
     ],
     package_data={"shpyx": ["py.typed"]},
     packages=setuptools.find_packages(),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 )

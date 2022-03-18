@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.9
+  python: python3.10
 repos:
   # GENERAL
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -9,7 +9,6 @@ repos:
         args: ["--maxkb=2000"]
       - id: check-builtin-literals
       - id: check-case-conflict
-      - id: check-docstring-first
       - id: check-executables-have-shebangs
       - id: check-json
       - id: check-merge-conflict
@@ -39,7 +38,7 @@ repos:
     hooks:
       - id: prettier
         additional_dependencies:
-          - "prettier@2.3.0"
+          - "prettier@2.6.0"
           - "prettier-plugin-ini@0.3.1"
 
   # PYTHON
@@ -56,27 +55,30 @@ repos:
     hooks:
       - id: isort
         args: [--settings-path, pyproject.toml]
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+  - repo: https://github.com/pycqa/flake8
+    rev: 4.0.1
     hooks:
       - id: flake8
         additional_dependencies:
-          - flake8-builtins==1.5.3
-          - flake8-comprehensions==3.4.0
-          - flake8-bugbear==21.4.3
-          - flake8-eradicate==1.0.0
-          - pep8-naming==0.11.1
+          - flake8-bugbear==22.1.11
+          - flake8-comprehensions==3.8.0
+          - flake8-docstrings==1.6.0
+          - pep8-naming==0.12.1
         args: [--config, .flake8]
   - repo: https://github.com/psf/black
     rev: 22.1.0
     hooks:
       - id: black
         args: [--config, pyproject.toml]
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: v1.8.1
+    hooks:
+      - id: darglint
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.31.1
     hooks:
       - id: pyupgrade
-        args: [--py39-plus]
+        args: [--py37-plus]
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.4
     hooks:
