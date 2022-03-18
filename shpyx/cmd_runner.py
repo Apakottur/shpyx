@@ -6,7 +6,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from shpyx.errors import InternalError, VerificationError
 from shpyx.result import ShellCmdResult
@@ -66,7 +66,7 @@ class ShellCmdRunner:
         self._config = config
 
     @staticmethod
-    def _log(msg: bytes | str) -> None:
+    def _log(msg: Union[bytes, str]) -> None:
         """
         Log a message to the standard output.
         """
@@ -86,7 +86,7 @@ class ShellCmdRunner:
         if _is_action_required(log_cmd, self._config.log_cmd):
             self._log(f"Running: {cmd}\n")
 
-    def _add_stdout(self, result: ShellCmdResult, data: bytes | None, log_output: Optional[bool]) -> None:
+    def _add_stdout(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
         """
         Add partial stdout output to the result.
         :param result: The result object of the command.
@@ -102,7 +102,7 @@ class ShellCmdRunner:
         if _is_action_required(log_output, self._config.log_output):
             self._log(data)
 
-    def _add_stderr(self, result: ShellCmdResult, data: bytes | None, log_output: Optional[bool]) -> None:
+    def _add_stderr(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
         """
         Add partial stderr output to the result.
         :param result: The result object of the command.
@@ -160,8 +160,8 @@ class ShellCmdRunner:
         log_output: Optional[bool] = False,
         verify_return_code: Optional[bool] = True,
         verify_stderr: Optional[bool] = False,
-        env: Optional[dict[str, str]] = None,
-        exec_dir: Optional[Union[Path, str]] = None,
+        env: Optional[Dict[str, str]] = None,
+        exec_dir: Union[Path, str, None] = None,
     ) -> ShellCmdResult:
         """
         Run the given shell command.
