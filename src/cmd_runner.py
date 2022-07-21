@@ -12,7 +12,7 @@ from shpyx.errors import InternalError, VerificationError
 from shpyx.result import ShellCmdResult
 
 
-def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool:
+def _is_action_required(user_value: bool | None, default_value: bool) -> bool:
     """
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
@@ -66,7 +66,7 @@ class ShellCmdRunner:
         self._config = config
 
     @staticmethod
-    def _log(msg: Union[bytes, str]) -> None:
+    def _log(msg: bytes | str) -> None:
         """
         Log a message to the standard output.
         """
@@ -77,7 +77,7 @@ class ShellCmdRunner:
 
         sys.stdout.flush()
 
-    def _maybe_log_cmd(self, cmd: str, log_cmd: Optional[bool]) -> None:
+    def _maybe_log_cmd(self, cmd: str, log_cmd: bool | None) -> None:
         """
         Log the command, if required by the user or by the default behavior.
         :param cmd: The command.
@@ -86,7 +86,7 @@ class ShellCmdRunner:
         if _is_action_required(log_cmd, self._config.log_cmd):
             self._log(f"Running: {cmd}\n")
 
-    def _add_stdout(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
+    def _add_stdout(self, result: ShellCmdResult, data: bytes | None, log_output: bool | None) -> None:
         """
         Add partial stdout output to the result.
         :param result: The result object of the command.
@@ -102,7 +102,7 @@ class ShellCmdRunner:
         if _is_action_required(log_output, self._config.log_output):
             self._log(data)
 
-    def _add_stderr(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
+    def _add_stderr(self, result: ShellCmdResult, data: bytes | None, log_output: bool | None) -> None:
         """
         Add partial stderr output to the result.
         :param result: The result object of the command.
@@ -119,7 +119,7 @@ class ShellCmdRunner:
             self._log(data)
 
     def _verify_result(
-        self, result: ShellCmdResult, verify_return_code: Optional[bool], verify_stderr: Optional[bool]
+        self, result: ShellCmdResult, verify_return_code: bool | None, verify_stderr: bool | None
     ) -> None:
         """
         Verify that the shell command executed successfully.
@@ -156,12 +156,12 @@ class ShellCmdRunner:
         self,
         cmd: str,
         *,
-        log_cmd: Optional[bool] = False,
-        log_output: Optional[bool] = False,
-        verify_return_code: Optional[bool] = True,
-        verify_stderr: Optional[bool] = False,
-        env: Optional[Dict[str, str]] = None,
-        exec_dir: Union[Path, str, None] = None,
+        log_cmd: bool | None = False,
+        log_output: bool | None = False,
+        verify_return_code: bool | None = True,
+        verify_stderr: bool | None = False,
+        env: dict[str, str] | None = None,
+        exec_dir: Path | str | None = None,
     ) -> ShellCmdResult:
         """
         Run the given shell command.

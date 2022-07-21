@@ -1,15 +1,8 @@
 [flake8]
-# per-file-ignores =
-
 # Enable everything by default.
 select = A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 
 ignore =
-    # Ignored - we rely on `black` to format our code.
-    E203 # Whitespace before ':'
-    E501 # Line too long
-    W503 # Line break occurred before a binary operator
-
     # Pydocstyle
     # See: http://www.pydocstyle.org/en/stable/error_codes.html
     D100 # Missing docstring in public module
