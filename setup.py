@@ -6,7 +6,7 @@ setuptools.setup(
     name="shpyx",
     version=version,
     author="https://github.com/Apakottur",
-    description="Configurable shell command execution in Python",
+    description="Simple, clean and modern library for executing shell commands in Python.",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/Apakottur/shpyx",

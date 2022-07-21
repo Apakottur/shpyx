@@ -1,21 +1,19 @@
-# shpyX - Configurable shell command execution in Python
+# ShpyX
 
-shpyX is a library which aims to simplify shell execution in Python by providing an API for easily interacting
-with the shell return code, outputs (i.e. stdio/stderr) and subprocess.
+**shpyx** is a simple, clean and modern library for executing shell commands in Python.
 
-For example, suppose we want to run the following command:
-
-```shell
-cmd arg_1 arg_2
-```
-
-Suppose we also want to suppress all outputs if the command returns `0` and to raise a **Python** exception if the
-return code is not `0`.
-With shpyX, we can do all that with:
+Use `shpyx.run` to run a shell command and inspect it's outcome:
 
 ```python
-import shpyx
-shpyx.run("cmd arg_1 arg_2")
+>>> import shpyx
+>>> shpyx.run("echo 1").return_code
+0
+>>> shpyx.run("echo 1").stdout
+'1\n'
+>>> shpyx.run("echo 1").stderr
+''
+>>> shpyx.run("echo 1")
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
 ## Installation
@@ -36,7 +34,7 @@ Run a command:
 ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
 ```
 
-Run a command and print the output:
+Run a command and print live output:
 
 ```
 >>> shpyx.run("echo 'Hello world'", log_output=True)
