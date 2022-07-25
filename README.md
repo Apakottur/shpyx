@@ -2,7 +2,7 @@
 
 **shpyx** is a simple, clean and modern library for executing shell commands in Python.
 
-Use `shpyx.run` to run a shell command and inspect it's outcome:
+Use `shpyx.run` to run a shell command:
 
 ```python
 >>> import shpyx
