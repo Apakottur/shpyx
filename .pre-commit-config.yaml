@@ -37,15 +37,6 @@ repos:
     rev: v2.6.2
     hooks:
       - id: prettier
-        exclude: |
-          (?x)^(
-              bot|
-              frontend|
-              backend/api/pytest-cov.ini|
-              backend/api/pytest.ini|
-              backend/api/tests/api/errors|
-              schema/schema.graphql
-          )
         args: [--config, linters/.prettierrc.js]
         additional_dependencies:
           - "prettier@2.6.2"
