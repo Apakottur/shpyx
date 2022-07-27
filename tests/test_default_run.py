@@ -17,5 +17,5 @@ def _verify_result(
 
 
 def test_echo() -> None:
-    result = shpyx.run("echo 1")
+    result = shpyx.run("echo '1'")
     _verify_result(result, return_code=0, stdout="1\n", stderr="")
