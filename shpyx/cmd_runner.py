@@ -166,7 +166,7 @@ class ShellCmdRunner:
 
     def run(
         self,
-        cmd: str,
+        cmd: Union[str, list[str]],
         *,
         log_cmd: Optional[bool] = None,
         log_output: Optional[bool] = None,
@@ -196,6 +196,8 @@ class ShellCmdRunner:
         Raises:
             ShpyxInternalError: Internal error when executing the command.
         """
+        if isinstance(cmd, list):
+            cmd = " ".join(cmd)
 
         # Log the command, if required.
         if _is_action_required(log_cmd, self._config.log_cmd):
