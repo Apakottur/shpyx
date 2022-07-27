@@ -27,4 +27,4 @@ jobs:
         run: poetry install
 
       - name: Run unit tests
-        run: poetry run pytest -c tests/pytest.ini
+        run: poetry run pytest -c tests/pytest.ini tests

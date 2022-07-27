@@ -5,6 +5,7 @@ venv
 # Python
 __pycache__
 .pytest_cache
+.coverage
 
 # Temporary files
 tmp
