@@ -6,7 +6,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
@@ -166,7 +166,7 @@ class ShellCmdRunner:
 
     def run(
         self,
-        cmd: Union[str, list[str]],
+        cmd: Union[str, List[str]],
         *,
         log_cmd: Optional[bool] = None,
         log_output: Optional[bool] = None,
