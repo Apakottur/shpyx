@@ -1,5 +1,9 @@
 # ShpyX
 
+[![PyPI](https://img.shields.io/pypi/v/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
+[![Downloads](https://img.shields.io/pypi/dm/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
+[![Python](https://img.shields.io/pypi/pyversions/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
+
 **shpyx** is a simple, clean and modern library for executing shell commands in Python.
 
 Use `shpyx.run` to run a shell command:
