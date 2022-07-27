@@ -1,5 +1,6 @@
 import fcntl
 import os
+import platform
 import signal
 import subprocess
 import sys
@@ -10,6 +11,9 @@ from typing import Dict, Optional, Union
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
+
+"""The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
+_SYSTEM = platform.system()
 
 
 def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool:
@@ -197,7 +201,8 @@ class ShellCmdRunner:
         # Build the command environment variables.
         cmd_env = os.environ.copy()
         if env is not None:
-            cmd_env = cmd_env | env
+            # The provided env vars will take precedence over existing ones.
+            cmd_env = {**cmd_env, **env}
 
         # Prepare the execution path.
         if exec_dir is not None:
@@ -221,8 +226,9 @@ class ShellCmdRunner:
         result = ShellCmdResult(cmd=cmd)
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
-        fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
-        fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
+        if _SYSTEM == "Linux":
+            fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
+            fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
 
         # Run the command in a subprocess, periodically checking for outputs.
         while p.poll() is None:
