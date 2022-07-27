@@ -6,7 +6,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional, Union
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
@@ -65,7 +65,7 @@ class ShellCmdRunner:
         self._config = config
 
     @staticmethod
-    def _log(msg: bytes | str) -> None:
+    def _log(msg: Union[bytes, str]) -> None:
         """
         Log a message to the standard output.
         """
@@ -76,7 +76,7 @@ class ShellCmdRunner:
 
         sys.stdout.flush()
 
-    def _add_stdout(self, result: ShellCmdResult, data: bytes | None, log_output: bool | None) -> None:
+    def _add_stdout(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
         """
         Add partial stdout output to the result.
 
@@ -94,7 +94,7 @@ class ShellCmdRunner:
         if _is_action_required(log_output, self._config.log_output):
             self._log(data)
 
-    def _add_stderr(self, result: ShellCmdResult, data: bytes | None, log_output: bool | None) -> None:
+    def _add_stderr(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
         """
         Add partial stderr output to the result.
 
@@ -115,8 +115,8 @@ class ShellCmdRunner:
     def _verify_result(
         self,
         result: ShellCmdResult,
-        verify_return_code: bool | None,
-        verify_stderr: bool | None,
+        verify_return_code: Optional[bool],
+        verify_stderr: Optional[bool],
     ) -> None:
         """
         Verify that the shell command executed successfully.
@@ -161,12 +161,12 @@ class ShellCmdRunner:
         self,
         cmd: str,
         *,
-        log_cmd: bool | None = None,
-        log_output: bool | None = None,
-        verify_return_code: bool | None = None,
-        verify_stderr: bool | None = None,
-        env: dict[str, str] | None = None,
-        exec_dir: Path | str | None = None,
+        log_cmd: Optional[bool] = None,
+        log_output: Optional[bool] = None,
+        verify_return_code: Optional[bool] = None,
+        verify_stderr: Optional[bool] = None,
+        env: Optional[Dict[str, str]] = None,
+        exec_dir: Optional[Union[Path, str]] = None,
     ) -> ShellCmdResult:
         """
         Run a shell command.
