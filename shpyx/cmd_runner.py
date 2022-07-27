@@ -1,4 +1,3 @@
-import fcntl
 import os
 import platform
 import signal
@@ -14,6 +13,10 @@ from shpyx.result import ShellCmdResult
 
 """The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
 _SYSTEM = platform.system()
+
+
+if _SYSTEM != "Windows":
+    import fcntl
 
 
 def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool:
@@ -226,7 +229,7 @@ class ShellCmdRunner:
         result = ShellCmdResult(cmd=cmd)
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
-        if _SYSTEM == "Linux":
+        if _SYSTEM != "Windows":
             fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
             fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
 
