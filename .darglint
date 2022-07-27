@@ -1,0 +1,4 @@
+[darglint]
+docstring_style=google
+message_template={path}:{line} - {msg}
+ignore=DAR101, DAR201, DAR301
