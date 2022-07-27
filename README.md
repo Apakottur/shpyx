@@ -6,7 +6,7 @@
 
 **shpyx** is a simple, clean and modern library for executing shell commands in Python.
 
-Use `shpyx.run` to run a shell command:
+Use `shpyx.run` to run a shell command in a subprocess:
 
 ```python
 >>> import shpyx
@@ -28,11 +28,11 @@ Install with `pip`:
 pip install shpyx
 ```
 
-## Usage
+## Usage examples
 
 Run a command:
 
-```
+```python
 >>> import shpyx
 >>> shpyx.run("echo 'Hello world'")
 ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
@@ -40,33 +40,29 @@ ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_
 
 Run a command and print live output:
 
-```
+```python
 >>> shpyx.run("echo 'Hello world'", log_output=True)
 Hello world
 ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
 ```
 
-Get live output during a long command:
-
-```
->>> result = shpyx.run("echo 'Hello'; sleep 10000", log_output=True)
-Hello
-```
-
 ## Motivation
 
-I've been writing automation scripts for many years, mostly in Bash and Windows shell.
+I've been writing automation scripts for many years, mostly in Bash.
 
-I love writing shell scripts, but in my opinion they become really hard to maintain once they become too big. I find
-Python a much more pleasant environment for doing the following things than a bare shell:
+I love Bash scripts, but in my opinion they become extremely hard to read, maintain and reason about once they grow
+too big. I find Python to be a much more pleasant tool for "gluing" together pieces of the project and external Bash
+commands.
+
+Here are things that one might find nicer to do in Python than in bare Bash:
 
 1. String/list manipulation
 2. Error handling
 3. Flow control (loops and conditions)
-4. Output piping and manipulation
+4. Output manipulation
 
-A few years ago I found out that the Python standard library provides a simple way of doing so
-via the `subprocess` module:
+The Python standard library provides the excellent [subprocess module](https://docs.python.org/3/library/subprocess.html)
+, which can be used to run bash commands through Python:
 
 ```python
 import subprocess
@@ -76,31 +72,26 @@ p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subproces
 cmd_stdout, cmd_stderr = p.communicate()
 ```
 
-I started with a simple function, which was used by my team, and over time encountered more and more requirements like:
+It's great for a very simple, single command, but becomes a bit tedious to use in more complex scenarios, when
+one or more of the following is needed:
 
+- Run many commands
 - Inspect the return code
 - See live command output (while it is being run)
 - Gracefully handle commands that are stuck (due to blocking I/O, for example)
 - Add formatted printing of every executed command and/or its output
 
-The function gradually turned into a module which eventually turned into `shpyX`.
+This often leads to each project having their own "run" command, which encapsulates `subprocess.Popen`.
 
-The goal of this project is to provide a friendly API for running shell commands, with emphasis on simplicity
-and configurability.
+The goal of shpyx is to provide a simple, configurable and typed API for running shell commands, dealing with much of
+the boilerplate involved with working with `subprocess.Popen`.
 
 ## Security
 
-The call to `subprocess.Popen` in this library uses `shell=True` which means that an actual system shell is being
+Essentially, `shpyx` is a wrapper around `subprocess.Popen`.
+The call to `subprocess.Popen` uses `shell=True` which means that an actual system shell is being
 created, and the subprocess has the permissions of the main Python process.
 
 It is therefore not recommended running untrusted commands via `shpyX`.
 
 For more info, see [security considerations](https://docs.python.org/3/library/subprocess.html#security-considerations).
-
-## Contributing
-
-Running the linters:
-
-```shell
-docker-compose up --build linters
-```
