@@ -10,12 +10,12 @@ def _verify_result(
     return_code: int = 0,
     stdout: str = "",
     stderr: str = "",
-):
+) -> None:
     assert return_code == result.return_code
     assert stdout == result.stdout
     assert stderr == result.stderr
 
 
-def test_echo():
+def test_echo() -> None:
     result = shpyx.run("echo 1")
     _verify_result(result, return_code=0, stdout="1\n", stderr="")

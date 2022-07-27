@@ -26,5 +26,5 @@ jobs:
       - name: Install Python dependencies
         run: poetry install
 
-      - name: Run unit tests
+      - name: Run mypy
         run: poetry run mypy --config-file shpyx/mypy.ini .
