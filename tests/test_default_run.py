@@ -20,10 +20,19 @@ def _verify_result(
     assert stderr == result.stderr
 
 
-def test_echo() -> None:
+def test_echo_as_list() -> None:
     if _SYSTEM == "Windows":
         result = shpyx.run(["echo", "1"])
+        _verify_result(result, return_code=0, stdout="1\r\n", stderr="")
+    else:
+        result = shpyx.run(["echo", "1"])
+        _verify_result(result, return_code=0, stdout="1\n", stderr="")
+
+
+def test_echo_as_string() -> None:
+    if _SYSTEM == "Windows":
+        result = shpyx.run("echo 1")
+        _verify_result(result, return_code=0, stdout="1\r\n", stderr="")
     else:
         result = shpyx.run("echo 1")
-
-    _verify_result(result, return_code=0, stdout="1\n", stderr="")
+        _verify_result(result, return_code=0, stdout="1\n", stderr="")

@@ -182,7 +182,7 @@ class ShellCmdRunner:
         The default values of the arguments can be found in `ShellCmdRunnerConfig`.
 
         Args:
-            args: The shell command arguments to run in a subprocess.
+            args: The shell command arguments, can be a string (with the full command) or a list of strings.
             log_cmd: Whether to log the executed command.
             log_output: Whether to log the live output of the command (while it is being executed).
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
@@ -196,11 +196,18 @@ class ShellCmdRunner:
         Raises:
             ShpyxInternalError: Internal error when executing the command.
         """
-        str_cmd = args if isinstance(args, list) else " ".join(args)
+        if isinstance(args, str):
+            cmd_str = args
+            cmd_popen = args
+            use_shell = True
+        else:
+            cmd_str = " ".join(args)
+            cmd_popen = args
+            use_shell = False
 
         # Log the command, if required.
         if _is_action_required(log_cmd, self._config.log_cmd):
-            self._log(f"Running: {str_cmd}\n")
+            self._log(f"Running: {cmd_str}\n")
 
         # Build the command environment variables.
         cmd_env = os.environ.copy()
@@ -214,8 +221,8 @@ class ShellCmdRunner:
 
         # Initialize the subprocess object.
         p = subprocess.Popen(
-            args if isinstance(args, list) else [args],
-            shell=True,
+            cmd_popen,
+            shell=use_shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=cmd_env,
@@ -227,7 +234,7 @@ class ShellCmdRunner:
             raise ShpyxInternalError("Failed to initialize subprocess.")
 
         # Initialize the result object.
-        result = ShellCmdResult(cmd=str_cmd)
+        result = ShellCmdResult(cmd=cmd_str)
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
         if _SYSTEM != "Windows":
