@@ -1,7 +1,11 @@
 """
 Test the default runner, `shpyx.run`.
 """
+import platform
+
 import shpyx
+
+_SYSTEM = platform.system()
 
 
 def _verify_result(
@@ -17,5 +21,9 @@ def _verify_result(
 
 
 def test_echo() -> None:
-    result = shpyx.run("echo '1'")
+    if _SYSTEM == "Windows":
+        result = shpyx.run(["echo", "1"])
+    else:
+        result = shpyx.run("echo 1")
+
     _verify_result(result, return_code=0, stdout="1\n", stderr="")
