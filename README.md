@@ -51,7 +51,7 @@ ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_
 I've been writing automation scripts for many years, mostly in Bash.
 
 I love Bash scripts, but in my opinion they become extremely hard to read, maintain and reason about once they grow
-too big. I find Python to be a much more pleasant tool for "gluing" together pieces of the project and external Bash
+too big. I find Python to be a much more pleasant tool for "gluing" together pieces of a project and external Bash
 commands.
 
 Here are things that one might find nicer to do in Python than in bare Bash:
@@ -81,10 +81,10 @@ one or more of the following is needed:
 - Gracefully handle commands that are stuck (due to blocking I/O, for example)
 - Add formatted printing of every executed command and/or its output
 
-This often leads to each project having their own "run" command, which encapsulates `subprocess.Popen`.
+This often leads to each project having their own "run" function, which encapsulates `subprocess.Popen`.
 
-The goal of shpyx is to provide a simple, configurable and typed API for running shell commands, dealing with much of
-the boilerplate involved with working with `subprocess.Popen`.
+This library aims to provide a simple, typed and configurable `run` function, dealing with all the caveats of using
+`subprocess.Popen`.
 
 ## Security
 
