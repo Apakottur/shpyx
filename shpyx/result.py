@@ -7,7 +7,7 @@ class ShellCmdResult:
     The result of an execution of a shell command.
     """
 
-    # The command that was run in the shell.
+    # The command that was executed.
     cmd: str
 
     # The output streams of the command: Standard Output and Standard Error.

@@ -1,1 +1,42 @@
-TODO
+[tool.poetry]
+name = "shpyx"
+packages = [ { include = "shpyx" } ]
+version = "0.0.15"
+description = "Simple, clean and modern library for executing shell commands in Python"
+authors = [ "Yossi Rozantsev" ]
+license = "MIT"
+readme = "README.md"
+keywords = [
+  "shell",
+  "bash",
+  "terminal",
+  "script"
+]
+homepage = "https://github.com/Apakottur/shpyx"
+repository = "https://github.com/Apakottur/shpyx"
+documentation = "https://github.com/Apakottur/shpyx"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+include = [ "shpyx/py.typed" ]
+
+[tool.poetry.urls]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+pytest = "7.1.2"
+
+[tool.poetry.extras]
+
+[tool.poetry.scripts]
+
+[build-system]
+requires = [ "poetry==1.1.14" ]
+build-backend = "poetry.masonry.api"

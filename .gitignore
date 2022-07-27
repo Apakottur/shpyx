@@ -4,3 +4,7 @@ venv
 
 # Python
 __pycache__
+.pytest_cache
+
+# Temporary files
+tmp
