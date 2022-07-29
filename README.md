@@ -1,4 +1,6 @@
-# ShpyX
+<p align="center">
+  <img src="shpyx.png" />
+</p>
 
 [![PyPI](https://img.shields.io/pypi/v/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
 [![Downloads](https://img.shields.io/pypi/dm/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
