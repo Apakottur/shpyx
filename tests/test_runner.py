@@ -14,7 +14,7 @@ import shpyx
 _SYSTEM = platform.system()
 
 # The line separator is different between OSs.
-_LINE_SEP = "\r\n" if _SYSTEM == "Windows" else "\n"
+_SEP = "\r\n" if _SYSTEM == "Windows" else "\n"
 
 
 def _verify_result(
@@ -32,19 +32,19 @@ def _verify_result(
 def test_echo_as_string() -> None:
     """Simple use case when input is a string"""
     result = shpyx.run("echo 1")
-    _verify_result(result, return_code=0, stdout=f"1{_LINE_SEP}", stderr="")
+    _verify_result(result, return_code=0, stdout=f"1{_SEP}", stderr="")
 
 
 def test_echo_as_list() -> None:
     """Simple use case when input is a list"""
     result = shpyx.run(["echo", "1"])
-    _verify_result(result, return_code=0, stdout=f"1{_LINE_SEP}", stderr="")
+    _verify_result(result, return_code=0, stdout=f"1{_SEP}", stderr="")
 
 
 def test_pipe() -> None:
     """Test the pipe operator, making sure an actual shell is used for strings"""
     result = shpyx.run("seq 1 5 | grep '2'")
-    _verify_result(result, return_code=0, stdout=f"2{_LINE_SEP}", stderr="")
+    _verify_result(result, return_code=0, stdout=f"2{_SEP}", stderr="")
 
 
 def test_invalid_command() -> None:
@@ -71,13 +71,13 @@ def test_log_output(capfd: pytest.CaptureFixture[str]) -> None:
     shpyx.run("echo 1", log_output=True)
 
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert (cap_stdout, cap_stderr) == ("1\n", "")
+    assert (cap_stdout, cap_stderr) == (f"1{_SEP}", "")
 
 
 def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR don't trigger an exception when `verify_stderr` is False."""
     result = shpyx.run("echo 1 >&2", log_output=True, verify_stderr=False)
-    _verify_result(result, return_code=0, stdout="", stderr=f"1{_LINE_SEP}")
+    _verify_result(result, return_code=0, stdout="", stderr=f"1{_SEP}")
 
     # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
@@ -111,7 +111,7 @@ def test_env(capfd: pytest.CaptureFixture[str]) -> None:
         cmd = "echo %MY_VAR%"
 
     result = shpyx.run(cmd, env={"MY_VAR": "10"})
-    _verify_result(result, return_code=0, stdout="10\n", stderr="")
+    _verify_result(result, return_code=0, stdout=f"10{_SEP}", stderr="")
 
 
 def test_exec_dir(capfd: pytest.CaptureFixture[str]) -> None:
