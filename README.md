@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="shpyx.png" />
+  <img src="![alt text](https://github.com/Apakottur/shpyx/blob/main/shpyx.png?raw=true)" />
 </p>
 
 [![PyPI](https://img.shields.io/pypi/v/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
