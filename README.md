@@ -91,7 +91,7 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 The following arguments are supported by `Runner`:
 
 | Name                 | Description                                                                | Default |
-| -------------------- | -------------------------------------------------------------------------- | ------- |
+|----------------------|----------------------------------------------------------------------------|---------|
 | `log_cmd`            | Log the executed command.                                                  | `False` |
 | `log_output`         | Log the live output of the command (while it is being executed).           | `False` |
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `True`  |
@@ -100,14 +100,14 @@ The following arguments are supported by `Runner`:
 
 The following arguments are supported by `run`:
 
-| Name                 | Description                                                                | Default          |
-| -------------------- | -------------------------------------------------------------------------- | ---------------- |
-| `log_cmd`            | Log the executed command.                                                  | `Runner default` |
-| `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default` |
-| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default` |
-| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default` |
-| `env`                | Environment variables to set during the execution of the command.          | `True`           |
-| `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `True`           |
+| Name                 | Description                                                                | Default                  |
+|----------------------|----------------------------------------------------------------------------|--------------------------|
+| `log_cmd`            | Log the executed command.                                                  | `Runner default`         |
+| `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default`         |
+| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |
+| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default`         |
+| `env`                | Environment variables to set during the execution of the command.          | `Same as parent process` |
+| `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `Same as parent process` |
 
 ## Implementation details
 
