@@ -6,6 +6,7 @@ venv
 __pycache__
 .pytest_cache
 .coverage
+dist
 
 # Temporary files
 tmp
