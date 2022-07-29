@@ -56,6 +56,16 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
+### Run a command with shell specific logic
+
+When the argument to `run` is a string, an actual shell is created in the subprocess and shell logic can be used.
+For example, the pipe operator can be used in bash/sh:
+
+```python
+>>> shpyx.run("seq 1 5 | grep '2'")
+ShellCmdResult(cmd="seq 1 5 | grep '2'", stdout='2\n', stderr='', all_output='2\n', return_code=0)
+```
+
 ### Create a custom runner
 
 Use a custom runner to override the execution defaults, and not have to pass them to every call.
@@ -78,7 +88,7 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 
 ## API Reference
 
-The following arguments are supported by both `Runner`:
+The following arguments are supported by `Runner`:
 
 | Name                 | Description                                                                | Default |
 | -------------------- | -------------------------------------------------------------------------- | ------- |
@@ -88,7 +98,7 @@ The following arguments are supported by both `Runner`:
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `False` |
 | `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `True`  |
 
-The following arguments are supported by both `run`:
+The following arguments are supported by `run`:
 
 | Name                 | Description                                                                | Default          |
 | -------------------- | -------------------------------------------------------------------------- | ---------------- |
@@ -104,9 +114,9 @@ The following arguments are supported by both `run`:
 `shpyx` is a wrapper around the excellent [subprocess](https://docs.python.org/3/library/subprocess.html) module, aiming
 to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
 
-While the core API logic is fully supported for both Unix and Windows systems, there is some OS specific code for minor quality-of-life
+While the core API logic is fully supported on both Unix and Windows systems, there is some OS specific code for minor quality-of-life
 improvements.
-For example, on non Windows systems the [fcntl](https://docs.python.org/3/library/fcntl.html) is used to configure the subprocess to
+For example, on non Windows systems, [fcntl](https://docs.python.org/3/library/fcntl.html) is used to configure the subprocess to
 always be incorruptible (which means one can CTRL-C out of any command).
 
 ## Security
@@ -133,6 +143,7 @@ Other user libraries for running shell commands in Python:
 ## Contributing
 
 To contribute simply open a PR with your changes.
+
 Tests, linters and type checks are run in CI through GitHub Actions.
 
 To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.

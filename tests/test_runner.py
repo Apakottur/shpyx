@@ -3,6 +3,7 @@ Test the default runner, `shpyx.run`.
 """
 import platform
 
+import pytest
 import shpyx
 
 _SYSTEM = platform.system()
@@ -33,3 +34,10 @@ def test_echo_as_list() -> None:
     """Simple use case when input is a list"""
     result = shpyx.run(["echo", "1"])
     _verify_result(result, return_code=0, stdout=f"1{_LINE_SEP}", stderr="")
+
+
+@pytest.mark.skipif(_SYSTEM == "Windows")
+def test_sh_pipe() -> None:
+    """Test the pipe operator of POSIX shells"""
+    result = shpyx.run("seq 1 5 | grep '2'")
+    _verify_result(result, return_code=0, stdout=f"2{_LINE_SEP}", stderr="")
