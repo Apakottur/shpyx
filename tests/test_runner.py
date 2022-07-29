@@ -50,7 +50,7 @@ def test_pipe() -> None:
 def test_invalid_command() -> None:
     stderr_by_platform = {
         "Windows": "/bin/sh: 1: blabla: not found\n",
-        "Darwin": "/bin/sh: 1: blabla: not found\n",
+        "Darwin": "/bin/sh: blabla: command not found\n",
         "Linux": "/bin/sh: 1: blabla: not found\n",
     }
 
