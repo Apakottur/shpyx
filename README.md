@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="![alt text](https://github.com/Apakottur/shpyx/blob/main/shpyx.png?raw=true)" />
+  <img src="https://github.com/Apakottur/shpyx/blob/main/shpyx.png?raw=true" />
 </p>
 
 [![PyPI](https://img.shields.io/pypi/v/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
 [![Downloads](https://img.shields.io/pypi/dm/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
 [![Python](https://img.shields.io/pypi/pyversions/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
 
-**shpyx** is a simple, clean and modern library for executing shell commands in Python.
+**shpyx** is a simple, lightweight and typed library for running shell commands in Python.
 
 Use `shpyx.run` to run a shell command in a subprocess:
 
@@ -30,70 +30,120 @@ Install with `pip`:
 pip install shpyx
 ```
 
-## Usage examples
+## How Tos
 
-Run a command:
+### Run a command
 
-```python
->>> import shpyx
->>> shpyx.run("echo 'Hello world'")
-ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
-```
-
-Run a command and print live output:
+In string format:
 
 ```python
->>> shpyx.run("echo 'Hello world'", log_output=True)
-Hello world
-ShellCmdResult(cmd="echo 'Hello world'", stdout='Hello world\n', stderr='', all_output='Hello world\n', return_code=0)
+>>> shpyx.run("echo 1")
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
-## Motivation
-
-I've been writing automation scripts for many years, mostly in Bash.
-
-I love Bash scripts, but in my opinion they become extremely hard to read, maintain and reason about once they grow
-too big. I find Python to be a much more pleasant tool for "gluing" together pieces of a project and external Bash
-commands.
-
-Here are things that one might find nicer to do in Python than in bare Bash:
-
-1. String/list manipulation
-2. Error handling
-3. Flow control (loops and conditions)
-4. Output manipulation
-
-The Python standard library provides the excellent [subprocess module](https://docs.python.org/3/library/subprocess.html)
-, which can be used to run bash commands through Python:
+In list format:
 
 ```python
-import subprocess
-
-cmd = "ls -l"
-p = subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-cmd_stdout, cmd_stderr = p.communicate()
+>>> shpyx.run(["echo", ["1"])
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
-It's great for a very simple, single command, but becomes a bit tedious to use in more complex scenarios, when
-one or more of the following is needed:
+### Run a command and print live output
 
-- Run many commands
-- Inspect the return code
-- See live command output (while it is being run)
-- Gracefully handle commands that are stuck (due to blocking I/O, for example)
-- Add formatted printing of every executed command and/or its output
+```python
+>>> shpyx.run("echo 1", log_output=True)
+1
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
+```
 
-This often leads to each project having their own "run" function, which encapsulates `subprocess.Popen`.
+### Run a command with shell specific logic
 
-This library aims to provide a simple, typed and configurable `run` function, dealing with all the caveats of using
-`subprocess.Popen`.
+When the argument to `run` is a string, an actual shell is created in the subprocess and shell logic can be used.
+For example, the pipe operator can be used in bash/sh:
+
+```python
+>>> shpyx.run("seq 1 5 | grep '2'")
+ShellCmdResult(cmd="seq 1 5 | grep '2'", stdout='2\n', stderr='', all_output='2\n', return_code=0)
+```
+
+### Create a custom runner
+
+Use a custom runner to override the execution defaults, and not have to pass them to every call.
+
+For example, we can change the default value of `log_cmd`, so that all commands are logged:
+
+```python
+>>> shpyx.run("echo 1")
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
+
+>>> shpyx.run("echo 1", log_cmd=True)
+Running: echo 1
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
+
+>>> runner = shpyx.Runner(log_cmd=True)
+>>> runner.run("echo 1")
+Running: echo 1
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
+```
+
+## API Reference
+
+The following arguments are supported by `Runner`:
+
+| Name                 | Description                                                                | Default |
+| -------------------- | -------------------------------------------------------------------------- | ------- |
+| `log_cmd`            | Log the executed command.                                                  | `False` |
+| `log_output`         | Log the live output of the command (while it is being executed).           | `False` |
+| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `True`  |
+| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `False` |
+| `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `True`  |
+
+The following arguments are supported by `run`:
+
+| Name                 | Description                                                                | Default          |
+| -------------------- | -------------------------------------------------------------------------- | ---------------- |
+| `log_cmd`            | Log the executed command.                                                  | `Runner default` |
+| `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default` |
+| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default` |
+| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default` |
+| `env`                | Environment variables to set during the execution of the command.          | `True`           |
+| `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `True`           |
+
+## Implementation details
+
+`shpyx` is a wrapper around the excellent [subprocess](https://docs.python.org/3/library/subprocess.html) module, aiming
+to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
+
+While the core API logic is fully supported on both Unix and Windows systems, there is some OS specific code for minor quality-of-life
+improvements.
+For example, on non Windows systems, [fcntl](https://docs.python.org/3/library/fcntl.html) is used to configure the subprocess to
+always be incorruptible (which means one can CTRL-C out of any command).
 
 ## Security
 
-Essentially, `shpyx` is a wrapper around `subprocess.Popen`.
-The call to `subprocess.Popen` uses `shell=True` which means that an actual system shell is being
-created, and the subprocess has the permissions of the main Python process.
+The call to `subprocess.Popen` uses `shell=True` when the input to `run` is a string (to support shell logic like bash piping).
+This means that an actual system shell is being created, and the subprocess has the permissions of the main Python process.
 
-It is therefore not recommended running untrusted commands via `shpyX`.
+It is therefore recommended not pass any untrusted input to `shpyx.run`.
 
 For more info, see [security considerations](https://docs.python.org/3/library/subprocess.html#security-considerations).
+
+## Useful links
+
+Relevant Python libraries:
+
+- [subprocess](https://docs.python.org/3/library/subprocess.html)
+- [shlex](https://docs.python.org/3/library/shlex.html)
+
+Other user libraries for running shell commands in Python:
+
+- [sarge](https://github.com/vsajip/sarge)
+- [sh](https://github.com/amoffat/sh)
+
+## Contributing
+
+To contribute simply open a PR with your changes.
+
+Tests, linters and type checks are run in CI through GitHub Actions.
+
+To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.

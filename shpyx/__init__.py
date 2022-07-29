@@ -1,11 +1,11 @@
-from .cmd_runner import ShellCmdRunner, run
 from .errors import ShpyxInternalError, ShpyxVerificationError
 from .result import ShellCmdResult
+from .runner import Runner, run
 
 __all__ = [
     "run",
+    "Runner",
     "ShellCmdResult",
-    "ShellCmdRunner",
     "ShpyxInternalError",
     "ShpyxVerificationError",
 ]
