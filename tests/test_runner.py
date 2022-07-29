@@ -36,7 +36,7 @@ def test_echo_as_list() -> None:
     _verify_result(result, return_code=0, stdout=f"1{_LINE_SEP}", stderr="")
 
 
-@pytest.mark.skipif(_SYSTEM == "Windows")
+@pytest.mark.skipif(_SYSTEM == "Windows", reason="Unix only")
 def test_sh_pipe() -> None:
     """Test the pipe operator of POSIX shells"""
     result = shpyx.run("seq 1 5 | grep '2'")
