@@ -91,7 +91,7 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 The following arguments are supported by `Runner`:
 
 | Name                 | Description                                                                | Default |
-|----------------------|----------------------------------------------------------------------------|---------|
+| -------------------- | -------------------------------------------------------------------------- | ------- |
 | `log_cmd`            | Log the executed command.                                                  | `False` |
 | `log_output`         | Log the live output of the command (while it is being executed).           | `False` |
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `True`  |
@@ -101,7 +101,7 @@ The following arguments are supported by `Runner`:
 The following arguments are supported by `run`:
 
 | Name                 | Description                                                                | Default                  |
-|----------------------|----------------------------------------------------------------------------|--------------------------|
+| -------------------- | -------------------------------------------------------------------------- | ------------------------ |
 | `log_cmd`            | Log the executed command.                                                  | `Runner default`         |
 | `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default`         |
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |

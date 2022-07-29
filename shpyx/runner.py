@@ -241,18 +241,9 @@ class Runner:
 
         # Run the command in a subprocess, periodically checking for outputs.
         while p.poll() is None:
-            stdout_data = None
-            stderr_data = None
-
             # Poll both outputs for any new data.
-            try:
-                stdout_data = p.stdout.read()
-            except TypeError:
-                pass
-            try:
-                stderr_data = p.stderr.read()
-            except TypeError:
-                pass
+            stdout_data = p.stdout.read()
+            stderr_data = p.stderr.read()
 
             # Add partial outputs to result and log them, if needed.
             self._add_stdout(result, stdout_data, log_output)
