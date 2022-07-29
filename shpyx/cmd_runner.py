@@ -196,13 +196,14 @@ class ShellCmdRunner:
         Raises:
             ShpyxInternalError: Internal error when executing the command.
         """
+
         if isinstance(args, str):
+            # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
-            cmd_popen = args
             use_shell = True
         else:
+            # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = " ".join(args)
-            cmd_popen = args
             use_shell = False
 
         # Log the command, if required.
@@ -221,7 +222,7 @@ class ShellCmdRunner:
 
         # Initialize the subprocess object.
         p = subprocess.Popen(
-            cmd_popen,
+            args,
             shell=use_shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
