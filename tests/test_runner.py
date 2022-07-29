@@ -44,12 +44,12 @@ def test_echo_as_list() -> None:
 def test_pipe() -> None:
     """Test the pipe operator, making sure an actual shell is used for strings"""
     result = shpyx.run("seq 1 5 | grep '2'")
-    _verify_result(result, return_code=0, stdout=f"2{_SEP}", stderr="")
+    _verify_result(result, return_code=0, stdout="2\n", stderr="")
 
 
 def test_invalid_command() -> None:
     stderr_by_platform = {
-        "Windows": "/bin/sh: 1: blabla: not found\n",
+        "Windows": "'blabla' is not recognized as an internal or external command, operable program or batch file.\r\n",
         "Darwin": "/bin/sh: blabla: command not found\n",
         "Linux": "/bin/sh: 1: blabla: not found\n",
     }
@@ -88,7 +88,7 @@ def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR trigger an exception when `verify_stderr` is True."""
     cmd = "echo 1 1>&2"
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        shpyx.run(cmd, log_output=True, verify_stderr=True)
+        shpyx.run(cmd, log_output=True, verify_stderr=True, use_signal_names=False)
 
     assert exc.value.reason == f"The command '{cmd}' failed with return code 0.\n\nError output:\n1\n\nAll output:\n1\n"
 
