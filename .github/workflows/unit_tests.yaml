@@ -1,4 +1,3 @@
-# Run unit tests.
 name: Unit tests
 
 on:
@@ -11,14 +10,21 @@ on:
 
 jobs:
   unit-tests:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    name: Unit tests - ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/setup-python@v4
+        id: setup-python
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Poetry
         run: pip install poetry

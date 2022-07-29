@@ -1,15 +1,22 @@
-import fcntl
 import os
+import platform
 import signal
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
+
+"""The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
+_SYSTEM = platform.system()
+
+
+if _SYSTEM != "Windows":
+    import fcntl
 
 
 def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool:
@@ -159,7 +166,7 @@ class ShellCmdRunner:
 
     def run(
         self,
-        cmd: str,
+        args: Union[str, List[str]],
         *,
         log_cmd: Optional[bool] = None,
         log_output: Optional[bool] = None,
@@ -175,7 +182,7 @@ class ShellCmdRunner:
         The default values of the arguments can be found in `ShellCmdRunnerConfig`.
 
         Args:
-            cmd: The shell command to run in a subprocess.
+            args: The shell command arguments, can be a string (with the full command) or a list of strings.
             log_cmd: Whether to log the executed command.
             log_output: Whether to log the live output of the command (while it is being executed).
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
@@ -190,14 +197,24 @@ class ShellCmdRunner:
             ShpyxInternalError: Internal error when executing the command.
         """
 
+        if isinstance(args, str):
+            # When a single string is passed, use an actual shell to support shell logic like bash piping.
+            cmd_str = args
+            use_shell = True
+        else:
+            # When the arguments are a list, there is no need to use an actual shell.
+            cmd_str = " ".join(args)
+            use_shell = False
+
         # Log the command, if required.
         if _is_action_required(log_cmd, self._config.log_cmd):
-            self._log(f"Running: {cmd}\n")
+            self._log(f"Running: {cmd_str}\n")
 
         # Build the command environment variables.
         cmd_env = os.environ.copy()
         if env is not None:
-            cmd_env = cmd_env | env
+            # The provided env vars will take precedence over existing ones.
+            cmd_env = {**cmd_env, **env}
 
         # Prepare the execution path.
         if exec_dir is not None:
@@ -205,8 +222,8 @@ class ShellCmdRunner:
 
         # Initialize the subprocess object.
         p = subprocess.Popen(
-            [cmd],
-            shell=True,
+            args,
+            shell=use_shell,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=cmd_env,
@@ -218,11 +235,12 @@ class ShellCmdRunner:
             raise ShpyxInternalError("Failed to initialize subprocess.")
 
         # Initialize the result object.
-        result = ShellCmdResult(cmd=cmd)
+        result = ShellCmdResult(cmd=cmd_str)
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
-        fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
-        fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
+        if _SYSTEM != "Windows":
+            fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
+            fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
 
         # Run the command in a subprocess, periodically checking for outputs.
         while p.poll() is None:

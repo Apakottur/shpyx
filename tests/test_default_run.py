@@ -1,7 +1,14 @@
 """
 Test the default runner, `shpyx.run`.
 """
+import platform
+
 import shpyx
+
+_SYSTEM = platform.system()
+
+# The line separator is different between OSs.
+_LINE_SEP = "\r\n" if _SYSTEM == "Windows" else "\n"
 
 
 def _verify_result(
@@ -16,6 +23,13 @@ def _verify_result(
     assert stderr == result.stderr
 
 
-def test_echo() -> None:
+def test_echo_as_string() -> None:
+    """Simple use case when input is a string"""
     result = shpyx.run("echo 1")
-    _verify_result(result, return_code=0, stdout="1\n", stderr="")
+    _verify_result(result, return_code=0, stdout=f"1{_LINE_SEP}", stderr="")
+
+
+def test_echo_as_list() -> None:
+    """Simple use case when input is a list"""
+    result = shpyx.run(["echo", "1"])
+    _verify_result(result, return_code=0, stdout=f"1{_LINE_SEP}", stderr="")
