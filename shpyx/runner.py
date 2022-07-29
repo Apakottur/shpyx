@@ -121,6 +121,7 @@ class Runner:
         result: ShellCmdResult,
         verify_return_code: Optional[bool],
         verify_stderr: Optional[bool],
+        use_signal_names: Optional[bool],
     ) -> None:
         """
         Verify that the shell command executed successfully.
@@ -130,6 +131,7 @@ class Runner:
             result: The command result object.
             verify_return_code: Whether to verify that the return code is `0`.
             verify_stderr: Whether to verify that the nothing was written to `stderr`.
+            use_signal_names: Whether to use signal names when logging errors.
 
         Raises:
             ShpyxVerificationError: If verification failed.
@@ -148,7 +150,7 @@ class Runner:
             return_code_str = str(result.return_code)
 
             # Add the signal name, if applicable.
-            if self._use_signal_names:
+            if _is_action_required(use_signal_names, self._use_signal_names):
                 try:
                     signal_name = signal.Signals(result.return_code).name
                     return_code_str += f" ({signal_name})"
@@ -169,6 +171,7 @@ class Runner:
         log_output: Optional[bool] = None,
         verify_return_code: Optional[bool] = None,
         verify_stderr: Optional[bool] = None,
+        use_signal_names: bool = None,
         env: Optional[Dict[str, str]] = None,
         exec_dir: Optional[Union[Path, str]] = None,
     ) -> ShellCmdResult:
@@ -184,6 +187,8 @@ class Runner:
             log_output: Whether to log the live output of the command (while it is being executed).
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
+            use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
+                               in case of result verification failure.
             env: Environment variables to set during the execution of the command (in addition to those of the parent
                  process, which will also be available to the subprocess).
             exec_dir: Custom path to execute the command in (defaults to current directory).
@@ -264,7 +269,7 @@ class Runner:
         result.return_code = p.returncode
 
         # Verify that the command result is valid, based on the verification configuration.
-        self._verify_result(result, verify_return_code, verify_stderr)
+        self._verify_result(result, verify_return_code, verify_stderr, use_signal_names)
 
         return result
 

@@ -76,7 +76,7 @@ def test_log_output(capfd: pytest.CaptureFixture[str]) -> None:
 
 def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR don't trigger an exception when `verify_stderr` is False."""
-    result = shpyx.run("echo 1 >&2", log_output=True, verify_stderr=False)
+    result = shpyx.run("echo 1 1>&2", log_output=True, verify_stderr=False)
     _verify_result(result, return_code=0, stdout="", stderr=f"1{_SEP}")
 
     # The error message is logged in the STDOUT of the parent process.
@@ -86,7 +86,7 @@ def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
 
 def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR trigger an exception when `verify_stderr` is True."""
-    cmd = "echo 1 >&2"
+    cmd = "echo 1 1>&2"
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
         shpyx.run(cmd, log_output=True, verify_stderr=True)
 
