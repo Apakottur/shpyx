@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import pytest_mock
 import shpyx
 
 _SYSTEM = platform.system()
@@ -50,51 +51,58 @@ def test_invalid_command() -> None:
         shpyx.run("blabla")
 
 
-def test_log_cmd(capfd) -> None:
+def test_log_cmd(capfd: pytest.CaptureFixture[str]) -> None:
     shpyx.run("echo 1", log_cmd=True)
 
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert cap_stdout, cap_stderr == ("Running: echo 1\n", "")
+    assert (cap_stdout, cap_stderr) == ("Running: echo 1\n", "")
 
 
-def test_log_output(capfd) -> None:
+def test_log_output(capfd: pytest.CaptureFixture[str]) -> None:
     shpyx.run("echo 1", log_output=True)
 
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert cap_stdout, cap_stderr == ("1\n", "")
+    assert (cap_stdout, cap_stderr) == ("1\n", "")
 
 
-def test_verify_stderr_disabled(capfd) -> None:
-    result = shpyx.run(">&2 echo 1", log_output=True, verify_stderr=False)
+def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
+    result = shpyx.run("echo 1 >&2", log_output=True, verify_stderr=False)
     _verify_result(result, return_code=0, stdout="", stderr=f"1{_LINE_SEP}")
 
+    # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert cap_stdout, cap_stderr == ("", "1\n")
+    assert (cap_stdout, cap_stderr) == ("1\n", "")
 
 
-def test_verify_stderr_enabled(capfd) -> None:
-    cmd = ">&2 echo 1"
+def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
+    cmd = "echo 1 >&2"
     with pytest.raises(
         shpyx.ShpyxVerificationError,
         match=f"The command '{cmd}' failed with return code 0.\n\nError output:\n1\n\nAll output:\n1\n",
     ):
         shpyx.run(cmd, log_output=True, verify_stderr=True)
 
+    # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert cap_stdout, cap_stderr == ("", "1\n")
+    assert (cap_stdout, cap_stderr) == ("1\n", "")
 
 
 def test_verify_return_code() -> None:
+    stderr_by_system = {
+        "Linux": "/bin/sh: 1: blabla: not found\n",
+        "Darwin": "/bin/sh: blabla: command not found\n",
+        "Windows": "/bin/sh: 1: blabla: not found\n",
+    }
     result = shpyx.run("blabla", verify_return_code=False)
-    _verify_result(result, return_code=127, stdout="", stderr="/bin/sh: 1: blabla: not found\n")
+    _verify_result(result, return_code=127, stdout="", stderr=stderr_by_system[_SYSTEM])
 
 
-def test_env(capfd) -> None:
+def test_env(capfd: pytest.CaptureFixture[str]) -> None:
     result = shpyx.run("echo $MY_VAR", env={"MY_VAR": "10"})
     _verify_result(result, return_code=0, stdout="10\n", stderr="")
 
 
-def test_exec_dir(capfd) -> None:
+def test_exec_dir(capfd: pytest.CaptureFixture[str]) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         open(Path(temp_dir) / "test.txt", "w").write("avocado")
 
@@ -108,8 +116,11 @@ def test_exec_dir(capfd) -> None:
         _verify_result(result, return_code=0, stdout="avocado", stderr="")
 
 
-def test_fail_to_initialize_subprocess(mocker) -> None:
-    mocker.patch("shpyx.runner.subprocess.Popen", lambda *args, **kwargs: None)
+def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> None:
+    def _popen(*args: str, **kwargs: str) -> None:
+        return None
+
+    mocker.patch("shpyx.runner.subprocess.Popen", _popen)
 
     with pytest.raises(shpyx.ShpyxInternalError, match="Failed to initialize subprocess."):
         shpyx.run("echo 1")
