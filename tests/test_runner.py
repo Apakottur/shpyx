@@ -10,6 +10,7 @@ import pytest
 import pytest_mock
 import shpyx
 
+# Platform OS.
 _SYSTEM = platform.system()
 
 # The line separator is different between OSs.
@@ -41,14 +42,22 @@ def test_echo_as_list() -> None:
 
 
 def test_pipe() -> None:
-    """Test the pipe operator of POSIX shells"""
+    """Test the pipe operator, making sure an actual shell is used for strings"""
     result = shpyx.run("seq 1 5 | grep '2'")
     _verify_result(result, return_code=0, stdout=f"2{_LINE_SEP}", stderr="")
 
 
 def test_invalid_command() -> None:
-    with pytest.raises(shpyx.ShpyxVerificationError, match="The command 'blabla' failed with return code"):
+    stderr_by_platform = {
+        "Windows": "/bin/sh: 1: blabla: not found\n",
+        "Darwin": "/bin/sh: 1: blabla: not found\n",
+        "Linux": "/bin/sh: 1: blabla: not found\n",
+    }
+
+    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
         shpyx.run("blabla")
+
+    assert exc.value.result.stderr == stderr_by_platform[_SYSTEM]
 
 
 def test_log_cmd(capfd: pytest.CaptureFixture[str]) -> None:
@@ -66,6 +75,7 @@ def test_log_output(capfd: pytest.CaptureFixture[str]) -> None:
 
 
 def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
+    """Verify that contents in STDERR don't trigger an exception when `verify_stderr` is False."""
     result = shpyx.run("echo 1 >&2", log_output=True, verify_stderr=False)
     _verify_result(result, return_code=0, stdout="", stderr=f"1{_LINE_SEP}")
 
@@ -75,34 +85,37 @@ def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
 
 
 def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
+    """Verify that contents in STDERR trigger an exception when `verify_stderr` is True."""
     cmd = "echo 1 >&2"
-    with pytest.raises(
-        shpyx.ShpyxVerificationError,
-        match=f"The command '{cmd}' failed with return code 0.\n\nError output:\n1\n\nAll output:\n1\n",
-    ):
+    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
         shpyx.run(cmd, log_output=True, verify_stderr=True)
+
+    assert exc.value.reason == f"The command '{cmd}' failed with return code 0.\n\nError output:\n1\n\nAll output:\n1\n"
 
     # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
     assert (cap_stdout, cap_stderr) == ("1\n", "")
 
 
-def test_verify_return_code() -> None:
-    stderr_by_system = {
-        "Linux": "/bin/sh: 1: blabla: not found\n",
-        "Darwin": "/bin/sh: blabla: command not found\n",
-        "Windows": "/bin/sh: 1: blabla: not found\n",
-    }
-    result = shpyx.run("blabla", verify_return_code=False)
-    _verify_result(result, return_code=127, stdout="", stderr=stderr_by_system[_SYSTEM])
+def test_verify_return_code_disabled() -> None:
+    """When disabled, a non-zero return code should not trigger an error"""
+    result = shpyx.run("exit 33", verify_return_code=False)
+    _verify_result(result, return_code=33, stdout="")
 
 
 def test_env(capfd: pytest.CaptureFixture[str]) -> None:
-    result = shpyx.run("echo $MY_VAR", env={"MY_VAR": "10"})
+    """Set a custom environment variable in the subprocess"""
+
+    cmd = "echo $MY_VAR"
+    if _SYSTEM == "Windows":
+        cmd = "echo %MY_VAR%"
+
+    result = shpyx.run(cmd, env={"MY_VAR": "10"})
     _verify_result(result, return_code=0, stdout="10\n", stderr="")
 
 
 def test_exec_dir(capfd: pytest.CaptureFixture[str]) -> None:
+    """Execute a command from a different directory"""
     with tempfile.TemporaryDirectory() as temp_dir:
         open(Path(temp_dir) / "test.txt", "w").write("avocado")
 
@@ -122,8 +135,10 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> Non
 
     mocker.patch("shpyx.runner.subprocess.Popen", _popen)
 
-    with pytest.raises(shpyx.ShpyxInternalError, match="Failed to initialize subprocess."):
+    with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
+
+    assert str(exc.value) == "Failed to initialize subprocess."
 
 
 def test_signal_names_enabled() -> None:
