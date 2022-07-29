@@ -47,7 +47,7 @@ def test_pipe() -> None:
 
 
 def test_invalid_command() -> None:
-    with pytest.raises(shpyx.ShpyxVerificationError, match="The command 'blabla' failed with return code 127."):
+    with pytest.raises(shpyx.ShpyxVerificationError, match="The command 'blabla' failed with return code"):
         shpyx.run("blabla")
 
 
@@ -127,7 +127,7 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> Non
 
 
 def test_signal_names_enabled() -> None:
-    signal_id = signal.Signals.SIGPROF
+    signal_id = signal.Signals.SIGINT
     signal_name = signal.Signals(signal_id).name
 
     cmd = f"exit {signal_id}"
@@ -141,7 +141,7 @@ def test_signal_names_enabled() -> None:
 
 
 def test_signal_names_disabled() -> None:
-    signal_id = signal.Signals.SIGPROF
+    signal_id = signal.Signals.SIGINT
 
     cmd = f"exit {signal_id}"
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
