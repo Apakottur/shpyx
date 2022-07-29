@@ -4,7 +4,6 @@ import signal
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
@@ -35,41 +34,39 @@ def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool
         return default_value
 
 
-@dataclass
-class ShellCmdRunnerConfig:
-    """
-    Configuration of a shell command runner.
-
-    The configuration, as passed to `ShellCmdRunner` constructor, defines the default behavior of the subprocess which
-    runs the shell command. Any of the settings can be overridden in individual calls to `run`.
-    """
-
-    log_cmd: bool = False
-    """Whether to log the executed command."""
-
-    log_output: bool = False
-    """Whether to log the live output of the command (while it is being executed)."""
-
-    verify_return_code: bool = True
-    """Whether to raise a `ShpyxVerificationError` if the shell return code of the command is not `0`."""
-
-    verify_stderr: bool = False
-    """Whether to raise a `ShpyxVerificationError` if the anything was written to stderr during the execution."""
-
-    use_signal_names: bool = True
-    """
-    Whether to log the name of the signal corresponding to a non-zero error code,
-    in case of result verification failure.
-    """
-
-
-class ShellCmdRunner:
+class Runner:
     """
     An instance of a shell command runner, used to run shell commands based on a specific configuration.
     """
 
-    def __init__(self, config: ShellCmdRunnerConfig) -> None:
-        self._config = config
+    def __init__(
+        self,
+        *,
+        log_cmd: bool = False,
+        log_output: bool = False,
+        verify_return_code: bool = True,
+        verify_stderr: bool = False,
+        use_signal_names: bool = True,
+    ) -> None:
+        """
+        Create a command runner.
+
+        The configuration defines the default behavior of the subprocess which runs the shell command.
+        Any of the settings can be overridden in individual calls to `run`.
+
+        Args:
+            log_cmd: Whether to log the executed command.
+            log_output: Whether to log the live output of the command (while it is being executed).
+            verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
+            verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
+            use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
+                               in case of result verification failure.
+        """
+        self._log_cmd = log_cmd
+        self._log_output = log_output
+        self._verify_return_code = verify_return_code
+        self._verify_stderr = verify_stderr
+        self._use_signal_names = use_signal_names
 
     @staticmethod
     def _log(msg: Union[bytes, str]) -> None:
@@ -98,7 +95,7 @@ class ShellCmdRunner:
         result.stdout += data.decode()
         result.all_output += data.decode()
 
-        if _is_action_required(log_output, self._config.log_output):
+        if _is_action_required(log_output, self._log_output):
             self._log(data)
 
     def _add_stderr(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
@@ -116,7 +113,7 @@ class ShellCmdRunner:
         result.stderr += data.decode()
         result.all_output += data.decode()
 
-        if _is_action_required(log_output, self._config.log_output):
+        if _is_action_required(log_output, self._log_output):
             self._log(data)
 
     def _verify_result(
@@ -140,18 +137,18 @@ class ShellCmdRunner:
         success = True
 
         # Verify return code.
-        if _is_action_required(verify_return_code, self._config.verify_return_code):
+        if _is_action_required(verify_return_code, self._verify_return_code):
             success &= result.return_code == 0
 
         # Verify stderr.
-        if _is_action_required(verify_stderr, self._config.verify_stderr):
+        if _is_action_required(verify_stderr, self._verify_stderr):
             success &= result.stderr == ""
 
         if not success:
             return_code_str = str(result.return_code)
 
             # Add the signal name, if applicable.
-            if self._config.use_signal_names:
+            if self._use_signal_names:
                 try:
                     signal_name = signal.Signals(result.return_code).name
                     return_code_str += f" ({signal_name})"
@@ -207,7 +204,7 @@ class ShellCmdRunner:
             use_shell = False
 
         # Log the command, if required.
-        if _is_action_required(log_cmd, self._config.log_cmd):
+        if _is_action_required(log_cmd, self._log_cmd):
             self._log(f"Running: {cmd_str}\n")
 
         # Build the command environment variables.
@@ -282,7 +279,7 @@ class ShellCmdRunner:
 
 
 # A runner object with default configuration.
-_default_runner = ShellCmdRunner(config=ShellCmdRunnerConfig())
+_default_runner = Runner()
 
 # The default run function, which can be used with `shpyx.run`.
 run = _default_runner.run
