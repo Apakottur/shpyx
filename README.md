@@ -86,11 +86,11 @@ Running: echo 1
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
-### (Unix only) Dealing with terminal control sequences
+### Propagating terminal control sequences
 
-Note: this section is only relevant for Unix environments.
+Note: as of now this is only supported for Unix environments.
 
-Some Unix commands, like `psql`, might output special characters used for terminal management like cursor movement and
+Some commands, like `psql`, might output special characters used for terminal management like cursor movement and
 colors. For example, the `psql` command is used to start an interactive shell against a Postgres DB:
 
 ```python
@@ -102,7 +102,11 @@ properly propagated. To make it work well, we need to use the [script](https://m
 utility which will properly propagate all control sequences:
 
 ```python
-shpyx.run(f"script -O /dev/null -q -c 'psql -h {host} -p {port} -U {user} -d {database}'", log_output=True)
+# Linux:
+shpyx.run(f"script -q -c 'psql -h {host} -p {port} -U {user} -d {database}'", log_output=True)
+# MacOS:
+shpyx.run(f"script -q psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
+
 ```
 
 shpyx provides a keyword argument that does this wrapping automatically, `unix_raw`:
