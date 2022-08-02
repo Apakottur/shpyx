@@ -1,5 +1,6 @@
 import os
 import platform
+import shlex
 import signal
 import subprocess
 import sys
@@ -175,6 +176,7 @@ class Runner:
         use_signal_names: Optional[bool] = None,
         env: Optional[Dict[str, str]] = None,
         exec_dir: Optional[Union[Path, str]] = None,
+        unix_raw: Optional[bool] = False,
     ) -> ShellCmdResult:
         """
         Run a shell command.
@@ -193,6 +195,9 @@ class Runner:
             env: Environment variables to set during the execution of the command (in addition to those of the parent
                  process, which will also be available to the subprocess).
             exec_dir: Custom path to execute the command in (defaults to current directory).
+            unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
+                      This allows capturing all characters from the command output, including cursor movement and
+                      colors. This is useful when the command is interactive within the shell, like `psql`.
 
         Returns: The result, as a `ShellCmdResult` object.
 
@@ -204,6 +209,9 @@ class Runner:
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
             use_shell = True
+
+            if _SYSTEM != "Windows" and unix_raw:
+                args = f"script -O /dev/null -q -c {shlex.quote(cmd_str)}"
         else:
             # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = " ".join(args)

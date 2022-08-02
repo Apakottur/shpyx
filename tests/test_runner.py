@@ -204,3 +204,10 @@ def test_signal_names_disabled() -> None:
         exc.value.reason == f"The command '{cmd}' failed with return code {signal_id}."
         f"\n\nError output:\n\nAll output:\n"
     )
+
+
+def test_unix_raw_enabled() -> None:
+    result = shpyx.run("echo 1", unix_raw=True)
+
+    # When `unix_raw` is True, the carriage return is passed on Unix as well.
+    _verify_result(result, return_code=0, stdout="1\r\n", stderr="")
