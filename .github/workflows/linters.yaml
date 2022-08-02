@@ -1,4 +1,3 @@
-# Run linters via pre-commit.
 name: Linters
 
 on:
@@ -9,6 +8,7 @@ on:
 
 jobs:
   linters:
+    name: Linters
     runs-on: ubuntu-latest
 
     steps:

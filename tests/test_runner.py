@@ -173,6 +173,20 @@ def test_signal_names_enabled() -> None:
     )
 
 
+def test_signal_names_enabled_name_unknown() -> None:
+    """Handle a single with an unknown name (not registered in the signal module)"""
+    signal_id = 101
+
+    cmd = f"exit {signal_id}"
+    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
+        shpyx.run(cmd, use_signal_names=True)
+
+    assert (
+        exc.value.reason == f"The command '{cmd}' failed with return code {signal_id}."
+        f"\n\nError output:\n\nAll output:\n"
+    )
+
+
 def test_signal_names_disabled() -> None:
     signal_id = signal.Signals.SIGINT
 
