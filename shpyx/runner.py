@@ -4,6 +4,7 @@ import shlex
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -204,6 +205,7 @@ class Runner:
         Raises:
             ShpyxInternalError: Internal error when executing the command.
         """
+        tmp_file = tempfile.NamedTemporaryFile()
 
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
@@ -211,7 +213,7 @@ class Runner:
             use_shell = True
 
             if _SYSTEM != "Windows" and unix_raw:
-                args = f"script -O /dev/null -q -c {shlex.quote(cmd_str)}"
+                args = f"script -q -c {shlex.quote(cmd_str)} {tmp_file.name}"
         else:
             # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = " ".join(args)
@@ -270,9 +272,10 @@ class Runner:
         self._add_stdout(result, final_stdout, log_output)
         self._add_stderr(result, final_stderr, log_output)
 
-        # Cleanup subprocess object.
+        # Cleanup.
         p.stdout.close()
         p.stderr.close()
+        tmp_file.close()
 
         # Save return code.
         result.return_code = p.returncode
