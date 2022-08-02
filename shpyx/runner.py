@@ -220,6 +220,7 @@ class Runner:
                 elif _SYSTEM == "Darwin":
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
                     args = f"script -q {tmp_file.name} {shlex.quote(cmd_str)}"
+                    print(args)
 
         else:
             # When the arguments are a list, there is no need to use an actual shell.
