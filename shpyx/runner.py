@@ -198,7 +198,7 @@ class Runner:
             exec_dir: Custom path to execute the command in (defaults to current directory).
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
-                      colors. This is useful when the command is interactive within the shell, like `psql`.
+                      colors. This can be useful when the command is an interactive shell, like `psql`.
 
         Returns: The result, as a `ShellCmdResult` object.
 
