@@ -204,3 +204,19 @@ def test_signal_names_disabled() -> None:
         exc.value.reason == f"The command '{cmd}' failed with return code {signal_id}."
         f"\n\nError output:\n\nAll output:\n"
     )
+
+
+def test_unix_raw_enabled() -> None:
+    """
+    Test the `unix_raw` argument.
+    """
+    output_by_platform = {
+        "Windows": "1\r\n",
+        "Darwin": "^D\x08\x081\r\n",
+        "Linux": "1\r\n",
+    }
+
+    result = shpyx.run("echo 1", unix_raw=True)
+
+    # When `unix_raw` is True, the carriage return is passed on Unix as well.
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")

@@ -86,6 +86,37 @@ Running: echo 1
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
+### Propagating terminal control sequences
+
+Note: as of now this is only supported for Unix environments.
+
+Some commands, like `psql`, might output special characters used for terminal management like cursor movement and
+colors. For example, the `psql` command is used to start an interactive shell against a Postgres DB:
+
+```python
+shpyx.run(f"psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
+```
+
+However, the above call will not work as good as running `psql` directly, due to terminal control sequences not being
+properly propagated. To make it work well, we need to use the [script](https://man7.org/linux/man-pages/man1/script.1.html)
+utility which will properly propagate all control sequences:
+
+```python
+# Linux:
+shpyx.run(f"script -q -c 'psql -h {host} -p {port} -U {user} -d {database}'", log_output=True)
+# MacOS:
+shpyx.run(f"script -q psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
+
+```
+
+shpyx provides a keyword argument that does this wrapping automatically, `unix_raw`:
+
+```python
+shpyx.run(f"psql -h {host} -p {port} -U {user} -d {database}", log_output=True, unix_raw=True)
+```
+
+The flag is disabled by default, and should only be used for interactive commands like `psql`.
+
 ## API Reference
 
 The following arguments are supported by `Runner`:
@@ -106,8 +137,10 @@ The following arguments are supported by `run`:
 | `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default`         |
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default`         |
+| `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `Runner default`         |
 | `env`                | Environment variables to set during the execution of the command.          | `Same as parent process` |
 | `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `Same as parent process` |
+| `unix_raw`           | (UNIX ONLY) Whether to use the `script` Unix utility to run the command.   | `False`                  |
 
 ## Implementation details
 

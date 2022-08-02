@@ -1,8 +1,10 @@
 import os
 import platform
+import shlex
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -175,6 +177,7 @@ class Runner:
         use_signal_names: Optional[bool] = None,
         env: Optional[Dict[str, str]] = None,
         exec_dir: Optional[Union[Path, str]] = None,
+        unix_raw: Optional[bool] = False,
     ) -> ShellCmdResult:
         """
         Run a shell command.
@@ -193,17 +196,31 @@ class Runner:
             env: Environment variables to set during the execution of the command (in addition to those of the parent
                  process, which will also be available to the subprocess).
             exec_dir: Custom path to execute the command in (defaults to current directory).
+            unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
+                      This allows capturing all characters from the command output, including cursor movement and
+                      colors. This can be useful when the command is an interactive shell, like `psql`.
 
         Returns: The result, as a `ShellCmdResult` object.
 
         Raises:
             ShpyxInternalError: Internal error when executing the command.
         """
+        tmp_file = tempfile.NamedTemporaryFile()
 
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
             use_shell = True
+
+            if unix_raw:
+                if _SYSTEM == "Linux":
+                    # Old format: https://linux.die.net/man/1/script
+                    # New format: https://man7.org/linux/man-pages/man1/script.1.html
+                    args = f"script -q -c {shlex.quote(cmd_str)} {tmp_file.name}"
+                elif _SYSTEM == "Darwin":
+                    # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
+                    args = f"script -q {tmp_file.name} {cmd_str}"
+
         else:
             # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = " ".join(args)
@@ -262,9 +279,10 @@ class Runner:
         self._add_stdout(result, final_stdout, log_output)
         self._add_stderr(result, final_stderr, log_output)
 
-        # Cleanup subprocess object.
+        # Cleanup.
         p.stdout.close()
         p.stderr.close()
+        tmp_file.close()
 
         # Save return code.
         result.return_code = p.returncode
