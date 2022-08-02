@@ -146,4 +146,30 @@ To contribute simply open a PR with your changes.
 
 Tests, linters and type checks are run in CI through GitHub Actions.
 
+### Running checks locally
+
+To run checks locally, start by installing all the development dependencies:
+
+```shell
+poetry install
+```
+
+To run the linters use `pre-commit`:
+
+```shell
+pre-commit run -a
+```
+
+To run the unit tests use `pytest`:
+
+```shell
+pytest -c tests/pytest.ini tests
+```
+
+To run type checks use `mypy`:
+
+```shell
+mypy --config-file shpyx/mypy.ini shpyx tests
+```
+
 To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.

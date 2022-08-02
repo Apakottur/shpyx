@@ -50,8 +50,8 @@ def test_pipe() -> None:
 
 def test_invalid_command() -> None:
     stderr_by_platform = {
-        "Windows": "'blabla' is not recognized as an internal or external command,"
-        "\n\noperable program or batch file.\r\n",
+        "Windows": "'blabla' is not recognized as an internal or external command,\r\n"
+        "operable program or batch file.\r\n",
         "Darwin": "/bin/sh: blabla: command not found\n",
         "Linux": "/bin/sh: 1: blabla: not found\n",
     }
