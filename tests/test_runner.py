@@ -51,7 +51,7 @@ def test_pipe() -> None:
 def test_invalid_command() -> None:
     stderr_by_platform = {
         "Windows": "'blabla' is not recognized as an internal or external command,"
-        "\noperable program or batch file.\r\n",
+        "\n\noperable program or batch file.\r\n",
         "Darwin": "/bin/sh: blabla: command not found\n",
         "Linux": "/bin/sh: 1: blabla: not found\n",
     }
@@ -112,7 +112,7 @@ def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
 
     # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert (cap_stdout, cap_stderr) == ("1\n", "")
+    assert (cap_stdout, cap_stderr) == (output_by_platform[_SYSTEM], "")
 
 
 def test_verify_return_code_disabled() -> None:
