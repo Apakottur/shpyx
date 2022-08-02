@@ -100,14 +100,14 @@ The following arguments are supported by `Runner`:
 
 The following arguments are supported by `run`:
 
-| Name                 | Description                                                                | Default          |
-| -------------------- | -------------------------------------------------------------------------- | ---------------- |
-| `log_cmd`            | Log the executed command.                                                  | `Runner default` |
-| `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default` |
-| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default` |
-| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default` |
-| `env`                | Environment variables to set during the execution of the command.          | `True`           |
-| `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `True`           |
+| Name                 | Description                                                                | Default                  |
+| -------------------- | -------------------------------------------------------------------------- | ------------------------ |
+| `log_cmd`            | Log the executed command.                                                  | `Runner default`         |
+| `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default`         |
+| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |
+| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default`         |
+| `env`                | Environment variables to set during the execution of the command.          | `Same as parent process` |
+| `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `Same as parent process` |
 
 ## Implementation details
 
@@ -145,5 +145,31 @@ Other user libraries for running shell commands in Python:
 To contribute simply open a PR with your changes.
 
 Tests, linters and type checks are run in CI through GitHub Actions.
+
+### Running checks locally
+
+To run checks locally, start by installing all the development dependencies:
+
+```shell
+poetry install
+```
+
+To run the linters use `pre-commit`:
+
+```shell
+pre-commit run -a
+```
+
+To run the unit tests use `pytest`:
+
+```shell
+pytest -c tests/pytest.ini tests
+```
+
+To run type checks use `mypy`:
+
+```shell
+mypy --config-file shpyx/mypy.ini shpyx tests
+```
 
 To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.

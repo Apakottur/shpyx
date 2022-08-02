@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "shpyx"
 packages = [ { include = "shpyx" } ]
-version = "0.0.19"
+version = "0.0.20"
 description = "Simple, clean and modern library for executing shell commands in Python"
 authors = [ "Yossi Rozantsev" ]
 license = "MIT"
@@ -25,15 +25,17 @@ classifiers = [
 ]
 include = [ "shpyx/py.typed" ]
 
-[tool.poetry.urls]
-
 [tool.poetry.dependencies]
 python = "^3.7"
 
 [tool.poetry.dev-dependencies]
+mypy = "0.971"
+pre-commit = "2.20.0"
 pytest = "7.1.2"
 pytest-cov = "3.0.0"
-mypy = "0.971"
+pytest-mock = "3.8.2"
+
+[tool.poetry.urls]
 
 [tool.poetry.extras]
 
