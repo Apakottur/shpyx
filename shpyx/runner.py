@@ -159,7 +159,8 @@ class Runner:
 
             reason = (
                 f"The command '{result.cmd}' failed with return code {return_code_str}.\n\n"
-                f"Error output:\n{result.stderr}\nAll output:\n{result.all_output}"
+                f"Error output:\n{result.stderr}\n"
+                f"All output:\n{result.all_output}"
             )
             raise ShpyxVerificationError(reason=reason, result=result)
 
@@ -171,7 +172,7 @@ class Runner:
         log_output: Optional[bool] = None,
         verify_return_code: Optional[bool] = None,
         verify_stderr: Optional[bool] = None,
-        use_signal_names: bool = None,
+        use_signal_names: Optional[bool] = None,
         env: Optional[Dict[str, str]] = None,
         exec_dir: Optional[Union[Path, str]] = None,
     ) -> ShellCmdResult:

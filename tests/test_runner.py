@@ -13,7 +13,8 @@ import shpyx
 # Platform OS.
 _SYSTEM = platform.system()
 
-# The line separator is different between OSs.
+# Utility constant for making tests compatible with Windows, where lines **sometimes** end with a carriage return, in
+# addition to a line break.
 _SEP = "\r\n" if _SYSTEM == "Windows" else "\n"
 
 
@@ -49,7 +50,8 @@ def test_pipe() -> None:
 
 def test_invalid_command() -> None:
     stderr_by_platform = {
-        "Windows": "'blabla' is not recognized as an internal or external command, operable program or batch file.\r\n",
+        "Windows": "'blabla' is not recognized as an internal or external command,"
+        "\noperable program or batch file.\r\n",
         "Darwin": "/bin/sh: blabla: command not found\n",
         "Linux": "/bin/sh: 1: blabla: not found\n",
     }
@@ -76,8 +78,14 @@ def test_log_output(capfd: pytest.CaptureFixture[str]) -> None:
 
 def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR don't trigger an exception when `verify_stderr` is False."""
+    output_by_platform = {
+        "Windows": "1 \r\n",
+        "Darwin": "1\n",
+        "Linux": "1\n",
+    }
+
     result = shpyx.run("echo 1 1>&2", log_output=True, verify_stderr=False)
-    _verify_result(result, return_code=0, stdout="", stderr=f"1{_SEP}")
+    _verify_result(result, return_code=0, stdout="", stderr=output_by_platform[_SYSTEM])
 
     # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
@@ -86,11 +94,21 @@ def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
 
 def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR trigger an exception when `verify_stderr` is True."""
+    output_by_platform = {
+        "Windows": "1 \n",
+        "Darwin": "1\n",
+        "Linux": "1\n",
+    }
+
     cmd = "echo 1 1>&2"
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
         shpyx.run(cmd, log_output=True, verify_stderr=True, use_signal_names=False)
 
-    assert exc.value.reason == f"The command '{cmd}' failed with return code 0.\n\nError output:\n1\n\nAll output:\n1\n"
+    assert (
+        exc.value.reason == f"The command '{cmd}' failed with return code 0.\n\n"
+        f"Error output:\n{output_by_platform[_SYSTEM]}\n"
+        f"All output:\n{output_by_platform[_SYSTEM]}"
+    )
 
     # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
