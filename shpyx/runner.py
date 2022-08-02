@@ -212,8 +212,15 @@ class Runner:
             cmd_str = args
             use_shell = True
 
-            if _SYSTEM != "Windows" and unix_raw:
-                args = f"script -q -c {shlex.quote(cmd_str)} {tmp_file.name}"
+            if unix_raw:
+                if _SYSTEM == "Linux":
+                    # Old format: https://linux.die.net/man/1/script
+                    # New format: https://man7.org/linux/man-pages/man1/script.1.html
+                    args = f"script -q -c {shlex.quote(cmd_str)} {tmp_file.name}"
+                elif _SYSTEM == "Darwin":
+                    # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
+                    args = f"script -q {tmp_file.name} {shlex.quote(cmd_str)}"
+
         else:
             # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = " ".join(args)

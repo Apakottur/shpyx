@@ -88,7 +88,7 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 
 ### (Unix only) Dealing with terminal control sequences
 
-Note: this use case has only been tested on Linux + Bash.
+Note: this section is only relevant for Unix environments.
 
 Some Unix commands, like `psql`, might output special characters used for terminal management like cursor movement and
 colors. For example, the `psql` command is used to start an interactive shell against a Postgres DB:
