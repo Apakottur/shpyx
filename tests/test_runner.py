@@ -48,6 +48,11 @@ def test_pipe() -> None:
     _verify_result(result, return_code=0, stdout="2\n", stderr="")
 
 
+def test_empty_command() -> None:
+    result = shpyx.run("")
+    _verify_result(result, return_code=0, stdout="", stderr="")
+
+
 def test_invalid_command() -> None:
     stderr_by_platform = {
         "Windows": "'blabla' is not recognized as an internal or external command,\r\n"

@@ -89,7 +89,7 @@ class Runner:
             data: The partial stdout output to add.
             log_output: Whether to log the output, as supplied to `.run`.
         """
-        if data is None:
+        if not data:
             return
 
         result.stdout += data.decode()
@@ -107,7 +107,7 @@ class Runner:
             data: The partial stderr output to add.
             log_output: Whether to log the output, as supplied to `.run`.
         """
-        if data is None:
+        if not data:
             return
 
         result.stderr += data.decode()
