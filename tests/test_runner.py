@@ -89,13 +89,13 @@ def test_verify_stderr_disabled(capfd: pytest.CaptureFixture[str]) -> None:
 
     # The error message is logged in the STDOUT of the parent process.
     cap_stdout, cap_stderr = capfd.readouterr()
-    assert (cap_stdout, cap_stderr) == ("1\n", "")
+    assert (cap_stdout, cap_stderr) == (output_by_platform[_SYSTEM], "")
 
 
 def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
     """Verify that contents in STDERR trigger an exception when `verify_stderr` is True."""
     output_by_platform = {
-        "Windows": "1 \n",
+        "Windows": "1 \r\n",
         "Darwin": "1\n",
         "Linux": "1\n",
     }
