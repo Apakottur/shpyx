@@ -24,11 +24,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        run: pip install poetry
-
-      - name: Install Python dependencies
-        run: poetry install
-
-      - name: Run unit tests
-        run: poetry run pytest -c tests/pytest.ini tests
+      - name: Script version
+        run: script -V
+#      - name: Install Poetry
+#        run: pip install poetry
+#
+#      - name: Install Python dependencies
+#        run: poetry install
+#
+#      - name: Run unit tests
+#        run: poetry run pytest -c tests/pytest.ini tests
