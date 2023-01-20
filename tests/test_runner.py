@@ -153,7 +153,7 @@ def test_exec_dir(capfd: pytest.CaptureFixture[str]) -> None:
 
 
 def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> None:
-    def _popen(*args: str, **kwargs: str) -> None:
+    def _popen(*_args: str, **_kwargs: str) -> None:
         return None
 
     mocker.patch("shpyx.runner.subprocess.Popen", _popen)
@@ -166,7 +166,7 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> Non
 
 def test_signal_names_enabled() -> None:
     signal_id = signal.Signals.SIGINT
-    signal_name = signal.Signals(signal_id).name
+    signal_name: str = signal.Signals(signal_id).name
 
     cmd = f"exit {signal_id}"
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
