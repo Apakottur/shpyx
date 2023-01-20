@@ -154,7 +154,7 @@ class Runner:
             # Add the signal name, if applicable.
             if _is_action_required(use_signal_names, self._use_signal_names):
                 try:
-                    signal_name = signal.Signals(result.return_code).name
+                    signal_name: str = signal.Signals(result.return_code).name
                     return_code_str += f" ({signal_name})"
                 except ValueError:
                     pass
