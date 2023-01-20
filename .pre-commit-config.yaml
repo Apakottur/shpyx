@@ -1,9 +1,11 @@
 default_language_version:
-  python: python3.10
+  python: python3.11
 repos:
-  # GENERAL
+  ###########
+  # GENERAL #
+  ###########
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=2000"]
@@ -30,6 +32,7 @@ repos:
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0
     hooks:
+      - id: script-must-have-extension
       - id: shellcheck
       - id: shfmt
         args: [-sr, -i 4]
@@ -39,58 +42,78 @@ repos:
       - id: prettier
         args: [--config, linters/.prettierrc.js]
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.28.0
+    rev: v8.32.0
     hooks:
       - id: eslint
         types: [file]
         files: \.(toml)$
         args: [--config, linters/.eslintrc.js, --fix]
         additional_dependencies:
-          - "eslint@8.28.0"
+          - "eslint@8.32.0"
           - "eslint-plugin-toml@0.3.1"
           - "toml-eslint-parser@0.4.0"
 
-  # PYTHON
+  ##########
+  # PYTHON #
+  ##########
   - repo: https://github.com/psf/black
-    rev: 22.10.0
+    rev: 22.12.0
     hooks:
       - id: black
         args: [--config, linters/pyproject.toml]
   - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.9.0
+    rev: v1.10.0
     hooks:
       - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
       - id: python-check-mock-methods
       - id: python-no-eval
       - id: python-no-log-warn
       - id: python-use-type-annotations
-  - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
-    hooks:
-      - id: isort
-        args: [--settings-path, linters/pyproject.toml]
-  - repo: https://github.com/pycqa/flake8
-    rev: 5.0.4
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-bugbear==22.10.27
-          - flake8-comprehensions==3.10.1
-          - flake8-docstrings==1.6.0
-          - pep8-naming==0.13.2
-        args: [--config, linters/.flake8]
-  - repo: https://github.com/terrencepreilly/darglint
-    rev: v1.8.1
-    hooks:
-      - id: darglint
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.2.2
+    rev: v3.3.1
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
+        types: [file]
+        types_or: [python, pyi]
+  - repo: https://github.com/MarcoGorelli/absolufy-imports
+    rev: v0.3.1
+    hooks:
+      - id: absolufy-imports
+        types: [file]
+        types_or: [python, pyi]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.11.4
+    hooks:
+      - id: isort
+        args: [--settings-path, ./linters/pyproject.toml]
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.4
     hooks:
       - id: bandit
-        args: [-q, -c, linters/bandit.yml]
         exclude: tests
+        args: [-q, -c, ./linters/bandit.yml]
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-bugbear==22.12.6
+          - flake8-comprehensions==3.10.1
+          - flake8-docstrings==1.6.0
+          - flake8-picky-parentheses==0.4.0
+          - flake8-pyi==22.11.0
+          - pep8-naming==0.13.3
+        args: [--config, ./linters/.flake8]
+        types: [file]
+        types_or: [python, pyi]
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: v1.8.1
+    hooks:
+      - id: darglint
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: "v2.7"
+    hooks:
+      - id: vulture
+        args: ["shpyx"]
