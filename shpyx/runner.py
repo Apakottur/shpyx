@@ -251,7 +251,7 @@ class Runner:
         )
 
         # Verify that all the pipes were properly configured.
-        if not (p and p.stdout and p.stderr):
+        if not (p.stdout and p.stderr):
             raise ShpyxInternalError("Failed to initialize subprocess.")
 
         # Initialize the result object.
