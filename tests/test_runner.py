@@ -155,7 +155,7 @@ def test_exec_dir() -> None:
 
 def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> None:
     def _popen(*_args: str, **_kwargs: str) -> None:
-        return None
+        raise OSError("Some SO error")
 
     mocker.patch("shpyx.runner.subprocess.Popen", _popen)
 

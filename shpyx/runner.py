@@ -241,17 +241,20 @@ class Runner:
             exec_dir = str(exec_dir)
 
         # Initialize the subprocess object.
-        p = subprocess.Popen(
-            args,
-            shell=use_shell,  # noqa: S603
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=cmd_env,
-            cwd=exec_dir,
-        )
+        try:
+            p = subprocess.Popen(
+                args,
+                shell=use_shell,  # noqa: S603
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=cmd_env,
+                cwd=exec_dir,
+            )
+        except Exception:
+            p = None
 
         # Verify that all the pipes were properly configured.
-        if not (p.stdout and p.stderr):
+        if not (p and p.stdout and p.stderr):
             raise ShpyxInternalError("Failed to initialize subprocess.")
 
         # Initialize the result object.
