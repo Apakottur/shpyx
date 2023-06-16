@@ -20,20 +20,20 @@ if _SYSTEM != "Windows":
     import fcntl
 
 
-def _is_action_required(user_value: Optional[bool], default_value: bool) -> bool:
+def _is_action_required(*, user: Optional[bool], default: bool) -> bool:
     """
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
     """
-    if user_value is True:
+    if user is True:
         # The user explicitly set the value to `True`.
         return True
-    elif user_value is False:
+    elif user is False:
         # The user explicitly set the value to `False`.
         return False
     else:
         # The user did not provide a value for the action, use the default.
-        return default_value
+        return default
 
 
 class Runner:
@@ -97,7 +97,7 @@ class Runner:
         result.stdout += data.decode()
         result.all_output += data.decode()
 
-        if _is_action_required(log_output, self._log_output):
+        if _is_action_required(user=log_output, default=self._log_output):
             self._log(data)
 
     def _add_stderr(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
@@ -115,7 +115,7 @@ class Runner:
         result.stderr += data.decode()
         result.all_output += data.decode()
 
-        if _is_action_required(log_output, self._log_output):
+        if _is_action_required(user=log_output, default=self._log_output):
             self._log(data)
 
     def _verify_result(
@@ -141,18 +141,18 @@ class Runner:
         success = True
 
         # Verify return code.
-        if _is_action_required(verify_return_code, self._verify_return_code):
+        if _is_action_required(user=verify_return_code, default=self._verify_return_code):
             success &= result.return_code == 0
 
         # Verify stderr.
-        if _is_action_required(verify_stderr, self._verify_stderr):
-            success &= result.stderr == ""
+        if _is_action_required(user=verify_stderr, default=self._verify_stderr):
+            success &= not result.stderr
 
         if not success:
             return_code_str = str(result.return_code)
 
             # Add the signal name, if applicable.
-            if _is_action_required(use_signal_names, self._use_signal_names):
+            if _is_action_required(user=use_signal_names, default=self._use_signal_names):
                 try:
                     signal_name: str = signal.Signals(result.return_code).name
                     return_code_str += f" ({signal_name})"
@@ -227,7 +227,7 @@ class Runner:
             use_shell = False
 
         # Log the command, if required.
-        if _is_action_required(log_cmd, self._log_cmd):
+        if _is_action_required(user=log_cmd, default=self._log_cmd):
             self._log(f"Running: {cmd_str}\n")
 
         # Build the command environment variables.
@@ -243,7 +243,7 @@ class Runner:
         # Initialize the subprocess object.
         p = subprocess.Popen(
             args,
-            shell=use_shell,
+            shell=use_shell,  # noqa: S603
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=cmd_env,

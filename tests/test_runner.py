@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 import pytest_mock
+
 import shpyx
 
 # Platform OS.
@@ -126,9 +127,8 @@ def test_verify_return_code_disabled() -> None:
     _verify_result(result, return_code=33, stdout="")
 
 
-def test_env(capfd: pytest.CaptureFixture[str]) -> None:
+def test_env() -> None:
     """Set a custom environment variable in the subprocess"""
-
     cmd = "echo $MY_VAR"
     if _SYSTEM == "Windows":
         cmd = "echo %MY_VAR%"
@@ -137,10 +137,11 @@ def test_env(capfd: pytest.CaptureFixture[str]) -> None:
     _verify_result(result, return_code=0, stdout=f"10{_SEP}", stderr="")
 
 
-def test_exec_dir(capfd: pytest.CaptureFixture[str]) -> None:
+def test_exec_dir() -> None:
     """Execute a command from a different directory"""
     with tempfile.TemporaryDirectory() as temp_dir:
-        open(Path(temp_dir) / "test.txt", "w").write("avocado")
+        with open(Path(temp_dir) / "test.txt", "w") as test_file:
+            test_file.write("avocado")
 
         result = shpyx.run("test -f test.txt", verify_return_code=False)
         _verify_result(result, return_code=1, stdout="", stderr="")
@@ -197,8 +198,7 @@ def test_signal_names_disabled() -> None:
 
     cmd = f"exit {signal_id}"
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        runner = shpyx.Runner(use_signal_names=False)
-        runner.run(cmd)
+        shpyx.Runner(use_signal_names=False).run(cmd)
 
     assert (
         exc.value.reason == f"The command '{cmd}' failed with return code {signal_id}."
