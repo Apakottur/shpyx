@@ -88,3 +88,8 @@ repos:
       rev: v1.8.1
       hooks:
       - id: darglint
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: "v2.7"
+    hooks:
+      - id: vulture
+        args: ["shpyx", "tests"]
