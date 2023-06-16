@@ -15,7 +15,7 @@ per-file-ignores =
     # Variable X in class scope should not be mixedCase
     N815,
     # Only operators and comments are allowed after a closing bracket on a new line
-    PAR101
+    PAR104
 
 # Enable everything by default.
 select = A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
@@ -39,59 +39,41 @@ ignore =
     # Line break occurred before a binary operator
     W503
 
-    ##############
-    # Pydocstyle #
-    ##############
-    # See: http://www.pydocstyle.org/en/stable/error_codes.html
-    # Missing docstring in public module
-    D100
-    # Missing docstring in public class
-    D101
-    # Missing docstring in public method
-    D102
-    # Missing docstring in public function
-    D103
-    # Missing docstring in public package
-    D104
-    # Missing docstring in magic method
-    D105
-    # Missing docstring in __init__
-    D107
-    # One-line docstring should fit on one line with quotes
-    D200
-    # No blank lines allowed after function docstring
-    D202
-    # 1 blank line required before class docstring
-    D203
-    # 1 blank line required between summary line and description
-    D205
-    # Multi-line docstring summary should start at the first line
-    D212
-    # First line should end with a period
-    D400
-    # First line should be in imperative mood; try rephrasing
-    D401
-    # First line should not be the function's "signature"
-    D402
-    # Section name should end with a newline
-    D406
-    # Missing dashed underline after section
-    D407
-    # Missing blank line after last section
-    D413
-    # First line should end with a period, question mark, or exclamation point
-    D415
+    #############################
+    # Ignored - duplicates Ruff #
+    #############################
+    # Function definition does not bind loop variable 'X'
+    B023
+    # Undefined name 'X'
+    F821
+    # redefinition of unused 'X' from line Y
+    F811
+    # Module imported but not used
+    F401
+    # first argument of a method should be named 'self'
+    N805
 
-# Maximum code complexity.
-max-complexity = 20
+    #############
+    # Pydoclint #
+    #############
+    # Function X docstring contains fewer arguments than in function signature.
+    DOC101
+    # Function X docstring arguments are different from function arguments.
+    DOC103
+    # Function X does not have a return section in docstring
+    DOC201
+    # Class X should not have a docstring; please combine it with the docstring of the class
+    DOC301
+    # Method X has "yield" statements, but the docstring does not have a "Yields" section
+    DOC402
+    # Function X has a "Raises" section in the docstring, but there are not "raise" statements in the body.
+    # TODO: Enable this once fixed.
+    DOC502
+
 
 # Maximum line length.
 max-line-length = 120
 
-# Enable all docstring checkers by default.
-docstring-convention = all
-
-# Allow using `pydantic.validator` as a decorator instead of `classmethod`.
-classmethod-decorators =
-    classmethod
-    validator
+# Pydoclint
+style = google
+type-hints-in-docstring = False
