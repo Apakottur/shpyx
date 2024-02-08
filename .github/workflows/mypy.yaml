@@ -30,4 +30,4 @@ jobs:
         run: poetry install
 
       - name: Run mypy
-        run: poetry run mypy --config-file shpyx/mypy.ini .
+        run: poetry run mypy --config-file shpyx/mypy.toml .

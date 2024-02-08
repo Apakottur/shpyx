@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import platform
 import shlex
@@ -7,7 +9,6 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
@@ -20,7 +21,7 @@ if _SYSTEM != "Windows":
     import fcntl
 
 
-def _is_action_required(*, user: Optional[bool], default: bool) -> bool:
+def _is_action_required(*, user: bool | None, default: bool) -> bool:
     """
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
@@ -71,7 +72,7 @@ class Runner:
         self._use_signal_names = use_signal_names
 
     @staticmethod
-    def _log(msg: Union[bytes, str]) -> None:
+    def _log(msg: bytes | str) -> None:
         """
         Log a message to the standard output.
         """
@@ -83,7 +84,11 @@ class Runner:
         sys.stdout.flush()
 
     def _add_stdout(
-        self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]
+        self,
+        *,
+        result: ShellCmdResult,
+        data: bytes | None,
+        log_output: bool | None,
     ) -> None:
         """
         Add partial stdout output to the result.
@@ -103,7 +108,11 @@ class Runner:
             self._log(data)
 
     def _add_stderr(
-        self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]
+        self,
+        *,
+        result: ShellCmdResult,
+        data: bytes | None,
+        log_output: bool | None,
     ) -> None:
         """
         Add partial stderr output to the result.
@@ -124,10 +133,11 @@ class Runner:
 
     def _verify_result(
         self,
+        *,
         result: ShellCmdResult,
-        verify_return_code: Optional[bool],
-        verify_stderr: Optional[bool],
-        use_signal_names: Optional[bool],
+        verify_return_code: bool | None,
+        verify_stderr: bool | None,
+        use_signal_names: bool | None,
     ) -> None:
         """
         Verify that the shell command executed successfully.
@@ -145,9 +155,7 @@ class Runner:
         success = True
 
         # Verify return code.
-        if _is_action_required(
-            user=verify_return_code, default=self._verify_return_code
-        ):
+        if _is_action_required(user=verify_return_code, default=self._verify_return_code):
             success &= result.return_code == 0
 
         # Verify stderr.
@@ -158,9 +166,7 @@ class Runner:
             return_code_str = str(result.return_code)
 
             # Add the signal name, if applicable.
-            if _is_action_required(
-                user=use_signal_names, default=self._use_signal_names
-            ):
+            if _is_action_required(user=use_signal_names, default=self._use_signal_names):
                 try:
                     signal_name: str = signal.Signals(result.return_code).name
                     return_code_str += f" ({signal_name})"
@@ -176,16 +182,16 @@ class Runner:
 
     def run(
         self,
-        args: Union[str, List[str]],
+        args: str | list[str],
         *,
-        log_cmd: Optional[bool] = None,
-        log_output: Optional[bool] = None,
-        verify_return_code: Optional[bool] = None,
-        verify_stderr: Optional[bool] = None,
-        use_signal_names: Optional[bool] = None,
-        env: Optional[Dict[str, str]] = None,
-        exec_dir: Optional[Union[Path, str]] = None,
-        unix_raw: Optional[bool] = False,
+        log_cmd: bool | None = None,
+        log_output: bool | None = None,
+        verify_return_code: bool | None = None,
+        verify_stderr: bool | None = None,
+        use_signal_names: bool | None = None,
+        env: dict[str, str] | None = None,
+        exec_dir: Path | str | None = None,
+        unix_raw: bool | None = False,
     ) -> ShellCmdResult:
         """
         Run a shell command.
