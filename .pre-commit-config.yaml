@@ -101,4 +101,4 @@ repos:
     rev: v2.11
     hooks:
       - id: vulture
-        args: ["shpyx"]
+        args: ["shpyx", "tests"]
