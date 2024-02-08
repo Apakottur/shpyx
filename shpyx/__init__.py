@@ -3,9 +3,9 @@ from shpyx.result import ShellCmdResult
 from shpyx.runner import Runner, run
 
 __all__ = [
-    "run",
     "Runner",
     "ShellCmdResult",
     "ShpyxInternalError",
     "ShpyxVerificationError",
+    "run",
 ]
