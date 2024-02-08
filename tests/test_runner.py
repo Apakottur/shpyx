@@ -41,7 +41,7 @@ def test_echo_as_string() -> None:
 def test_echo_as_list() -> None:
     """Simple use case when input is a list"""
     result = shpyx.run(["echo", "1"])
-    _verify_result(result, return_code=0, stdout=f"1{_SEP}", stderr="")
+    _verify_result(result, return_code=0, stdout="1\n", stderr="")
 
 
 def test_pipe() -> None:
