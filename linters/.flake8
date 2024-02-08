@@ -21,9 +21,9 @@ per-file-ignores =
 select = A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 
 ignore =
-    ###################################################
-    # Ignored - we rely on `black` to format our code #
-    ###################################################
+    ################################################
+    # Ignored - we rely on ruff to format our code #
+    ################################################
     # Whitespace before ':'
     E203
     # At least two spaces before inline comment
@@ -36,21 +36,37 @@ ignore =
     E501
     # multiple statements on one line
     E704
+    # Only operators and comments are allowed after a closing bracket on a new line
+    PAR104
     # Line break occurred before a binary operator
     W503
 
     #############################
     # Ignored - duplicates Ruff #
     #############################
+    # Do not perform function calls in argument defaults.
+    B008
     # Function definition does not bind loop variable 'X'
     B023
-    # Undefined name 'X'
-    F821
-    # redefinition of unused 'X' from line Y
-    F811
+    # Unnecessary generator
+    C401
+    # Unnecessary list comprehension
+    C419
+    # Module level import not at top of file
+    E402
+    # Comparison to False should be 'if condition is False:' or 'if not condition:'
+    E712
+    # Do not assign a lambda expression, use a def
+    E731
     # Module imported but not used
     F401
-    # first argument of a method should be named 'self'
+    # Undefined name 'X'
+    F821
+    # local variable 'X' is assigned to but never used
+    F841
+    # Redefinition of unused 'X' from line Y
+    F811
+    # First argument of a method should be named 'self'
     N805
 
     #############
@@ -62,18 +78,26 @@ ignore =
     DOC103
     # Function X does not have a return section in docstring
     DOC201
+    # Function X return type(s) in docstring not consistent with the return annotation.
+    DOC203
     # Class X should not have a docstring; please combine it with the docstring of the class
     DOC301
     # Method X has "yield" statements, but the docstring does not have a "Yields" section
     DOC402
-    # Function X has a "Raises" section in the docstring, but there are not "raise" statements in the body.
-    # TODO: Enable this once fixed.
-    DOC502
+    # Method X yield type(s) in docstring not consistent with the return annotation.
+    DOC404
 
+    ###################################
+    # Other checks that we don't want #
+    ###################################
+    # Method is too complex
+    C901
+    # Exception name should be named with an Error suffix
+    N818
 
 # Maximum line length.
 max-line-length = 120
 
 # Pydoclint
 style = google
-type-hints-in-docstring = False
+arg-type-hints-in-docstring = False

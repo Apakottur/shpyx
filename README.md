@@ -202,7 +202,7 @@ pytest -c tests/pytest.ini tests
 To run type checks use `mypy`:
 
 ```shell
-mypy --config-file shpyx/mypy.ini shpyx tests
+mypy --config-file shpyx/mypy.toml shpyx tests
 ```
 
 To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.

@@ -2,12 +2,11 @@ import os
 import platform
 import shlex
 import signal
-import subprocess
+import subprocess  # noqa: S404
 import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
@@ -20,7 +19,7 @@ if _SYSTEM != "Windows":
     import fcntl
 
 
-def _is_action_required(*, user: Optional[bool], default: bool) -> bool:
+def _is_action_required(*, user: bool | None, default: bool) -> bool:
     """
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
@@ -71,7 +70,7 @@ class Runner:
         self._use_signal_names = use_signal_names
 
     @staticmethod
-    def _log(msg: Union[bytes, str]) -> None:
+    def _log(msg: bytes | str) -> None:
         """
         Log a message to the standard output.
         """
@@ -82,7 +81,7 @@ class Runner:
 
         sys.stdout.flush()
 
-    def _add_stdout(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
+    def _add_stdout(self, *, result: ShellCmdResult, data: bytes | None, log_output: bool | None) -> None:
         """
         Add partial stdout output to the result.
 
@@ -100,7 +99,7 @@ class Runner:
         if _is_action_required(user=log_output, default=self._log_output):
             self._log(data)
 
-    def _add_stderr(self, result: ShellCmdResult, data: Optional[bytes], log_output: Optional[bool]) -> None:
+    def _add_stderr(self, *, result: ShellCmdResult, data: bytes | None, log_output: bool | None) -> None:
         """
         Add partial stderr output to the result.
 
@@ -120,10 +119,11 @@ class Runner:
 
     def _verify_result(
         self,
+        *,
         result: ShellCmdResult,
-        verify_return_code: Optional[bool],
-        verify_stderr: Optional[bool],
-        use_signal_names: Optional[bool],
+        verify_return_code: bool | None,
+        verify_stderr: bool | None,
+        use_signal_names: bool | None,
     ) -> None:
         """
         Verify that the shell command executed successfully.
@@ -168,16 +168,16 @@ class Runner:
 
     def run(
         self,
-        args: Union[str, List[str]],
+        args: str | list[str],
         *,
-        log_cmd: Optional[bool] = None,
-        log_output: Optional[bool] = None,
-        verify_return_code: Optional[bool] = None,
-        verify_stderr: Optional[bool] = None,
-        use_signal_names: Optional[bool] = None,
-        env: Optional[Dict[str, str]] = None,
-        exec_dir: Optional[Union[Path, str]] = None,
-        unix_raw: Optional[bool] = False,
+        log_cmd: bool | None = None,
+        log_output: bool | None = None,
+        verify_return_code: bool | None = None,
+        verify_stderr: bool | None = None,
+        use_signal_names: bool | None = None,
+        env: dict[str, str] | None = None,
+        exec_dir: Path | str | None = None,
+        unix_raw: bool | None = False,
     ) -> ShellCmdResult:
         """
         Run a shell command.
@@ -262,8 +262,16 @@ class Runner:
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
         if _SYSTEM != "Windows":
-            fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
-            fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
+            fcntl.fcntl(
+                p.stdout.fileno(),
+                fcntl.F_SETFL,
+                fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
+            )
+            fcntl.fcntl(
+                p.stderr.fileno(),
+                fcntl.F_SETFL,
+                fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
+            )
 
         # Run the command in a subprocess, periodically checking for outputs.
         while p.poll() is None:
@@ -272,15 +280,15 @@ class Runner:
             stderr_data = p.stderr.read()
 
             # Add partial outputs to result and log them, if needed.
-            self._add_stdout(result, stdout_data, log_output)
-            self._add_stderr(result, stderr_data, log_output)
+            self._add_stdout(result=result, data=stdout_data, log_output=log_output)
+            self._add_stderr(result=result, data=stderr_data, log_output=log_output)
 
             time.sleep(0.01)
 
         # Get the remaining outputs and add them to the result.
         final_stdout, final_stderr = p.communicate()
-        self._add_stdout(result, final_stdout, log_output)
-        self._add_stderr(result, final_stderr, log_output)
+        self._add_stdout(result=result, data=final_stdout, log_output=log_output)
+        self._add_stderr(result=result, data=final_stderr, log_output=log_output)
 
         # Cleanup.
         p.stdout.close()
@@ -291,7 +299,12 @@ class Runner:
         result.return_code = p.returncode
 
         # Verify that the command result is valid, based on the verification configuration.
-        self._verify_result(result, verify_return_code, verify_stderr, use_signal_names)
+        self._verify_result(
+            result=result,
+            verify_return_code=verify_return_code,
+            verify_stderr=verify_stderr,
+            use_signal_names=use_signal_names,
+        )
 
         return result
 

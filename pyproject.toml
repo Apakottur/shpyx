@@ -10,12 +10,7 @@ description = "Run shell commands in Python"
 authors = ["Yossi Rozantsev"]
 license = "MIT"
 readme = "README.md"
-keywords = [
-  "shell",
-  "bash",
-  "terminal",
-  "script",
-]
+keywords = ["shell", "bash", "terminal", "script"]
 homepage = "https://github.com/Apakottur/shpyx"
 repository = "https://github.com/Apakottur/shpyx"
 documentation = "https://github.com/Apakottur/shpyx"
@@ -30,14 +25,14 @@ classifiers = [
 include = ["shpyx/py.typed"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 
 [tool.poetry.dev-dependencies]
-mypy = "1.3.0"
-pre-commit = "2.21.0"
-pytest = "7.3.2"
+mypy = "1.8.0"
+pre-commit = "3.5.0"
+pytest = "8.0.0"
 pytest-cov = "4.1.0"
-pytest-mock = "3.11.1"
+pytest-mock = "3.12.0"
 
 [tool.poetry.extras]
 
