@@ -6,7 +6,7 @@
 line-length = 120
 
 # Python version.
-target-version = "py311"
+target-version = "py38"
 
 # Enable autofixing.
 fix = true
@@ -90,16 +90,6 @@ ignore = [
   "TD003", # Missing issue link on the line following this TODO
   "TD005", # Missing issue description after `TODO`
   "TRY003", # Avoid specifying long messages outside the exception class
-  ##########################
-  # Checks that are broken #
-  ##########################
-  # https://github.com/astral-sh/ruff/issues/5639
-  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
-  ########
-  # TODO #
-  ########
-  # For each check(s) in this section we should either enable it and fix all errors or move to do-not-want section.
-  "DTZ005", # The use of `datetime.datetime.now()` without `tz` argument is not allowed
 ]
 
 # Import sorting configuration.
