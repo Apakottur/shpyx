@@ -294,15 +294,15 @@ class Runner:
             stderr_data = p.stderr.read()
 
             # Add partial outputs to result and log them, if needed.
-            self._add_stdout(result, stdout_data, log_output)
-            self._add_stderr(result, stderr_data, log_output)
+            self._add_stdout(result=result, data=stdout_data, log_output=log_output)
+            self._add_stderr(result=result, data=stderr_data, log_output=log_output)
 
             time.sleep(0.01)
 
         # Get the remaining outputs and add them to the result.
         final_stdout, final_stderr = p.communicate()
-        self._add_stdout(result, final_stdout, log_output)
-        self._add_stderr(result, final_stderr, log_output)
+        self._add_stdout(result=result, data=final_stdout, log_output=log_output)
+        self._add_stderr(result=result, data=final_stderr, log_output=log_output)
 
         # Cleanup.
         p.stdout.close()
@@ -313,7 +313,12 @@ class Runner:
         result.return_code = p.returncode
 
         # Verify that the command result is valid, based on the verification configuration.
-        self._verify_result(result, verify_return_code, verify_stderr, use_signal_names)
+        self._verify_result(
+            result=result,
+            verify_return_code=verify_return_code,
+            verify_stderr=verify_stderr,
+            use_signal_names=use_signal_names,
+        )
 
         return result
 
