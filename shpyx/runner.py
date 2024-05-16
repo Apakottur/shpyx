@@ -4,14 +4,17 @@ import os
 import platform
 import shlex
 import signal
-import subprocess  # noqa: S404
+import subprocess
 import sys
 import tempfile
 import time
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 """The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
 _SYSTEM = platform.system()

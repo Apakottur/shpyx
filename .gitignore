@@ -10,3 +10,4 @@ dist
 
 # Temporary files
 tmp
+.cspellcache

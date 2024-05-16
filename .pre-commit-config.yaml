@@ -1,11 +1,11 @@
 default_language_version:
-  python: python3.11
+  python: python3.12
 repos:
   ###########
   # GENERAL #
   ###########
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=2000"]
@@ -47,12 +47,24 @@ repos:
     hooks:
       - id: taplo-docker
         args: [format, --config, ./linters/taplo.toml]
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ['--config-file', './linters/yamllint.yaml']
   - repo: https://github.com/biomejs/pre-commit
     rev: v0.1.0
     hooks:
       - id: biome-check
         args: [--config-path, ./linters]
         additional_dependencies: ["@biomejs/biome@1.5.1"]
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v8.8.1
+    hooks:
+      - id: cspell
+        exclude: \.(csv|json|txt|lock)$
+        args: ["lint", "-c", "./linters/cspell.json", "--no-progress",
+               "--cache", "--cache-location", "./linters/.cspellcache"]
   ##########
   # PYTHON #
   ##########
@@ -62,7 +74,6 @@ repos:
       - id: python-check-blanket-noqa
       - id: python-check-blanket-type-ignore
       - id: python-check-mock-methods
-      - id: python-no-eval
       - id: python-no-log-warn
       - id: python-use-type-annotations
   - repo: https://github.com/MarcoGorelli/absolufy-imports
@@ -72,30 +83,29 @@ repos:
         types: [file]
         types_or: [python, pyi]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.1
+    rev: v0.4.4
     hooks:
       - id: ruff
-        args: [ --config, ./linters/ruff.toml ]
+        args: [--config, ./linters/ruff.toml]
       - id: ruff-format
-        args: [ --config, ./linters/ruff.toml ]
-
+        args: [--config, ./linters/ruff.toml]
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
     hooks:
       - id: flake8
         additional_dependencies:
-          - flake8-bugbear==24.2.6
+          - flake8-bugbear==24.4.26
           - flake8-comprehensions==3.14.0
-          - flake8-picky-parentheses==0.5.4
-          - flake8-pyi==24.1.0
+          - flake8-picky-parentheses==0.5.5
+          - flake8-pyi==24.4.1
           - pep8-naming==0.13.3
-          - pydoclint==0.4.0
+          - pydoclint==0.4.1
         args: [--config, ./linters/.flake8]
         types: [file]
         types_or: [python, pyi]
-  -   repo: https://github.com/terrencepreilly/darglint
-      rev: v1.8.1
-      hooks:
+  - repo: https://github.com/terrencepreilly/darglint
+    rev: v1.8.1
+    hooks:
       - id: darglint
   - repo: https://github.com/jendrikseipp/vulture
     rev: v2.11
