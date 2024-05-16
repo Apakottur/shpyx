@@ -89,7 +89,6 @@ ignore = [
 [lint.isort]
 # Import sorting configuration.
 split-on-trailing-comma = false
-known-first-party = ["shared"]
 combine-as-imports = true
 
 [lint.pydocstyle]
