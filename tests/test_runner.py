@@ -57,14 +57,14 @@ def test_empty_command() -> None:
 
 def test_invalid_command() -> None:
     stderr_by_platform = {
-        "Windows": "'blabla' is not recognized as an internal or external command,\r\n"
+        "Windows": "'banana' is not recognized as an internal or external command,\r\n"
         "operable program or batch file.\r\n",
-        "Darwin": "/bin/sh: blabla: command not found\n",
-        "Linux": "/bin/sh: 1: blabla: not found\n",
+        "Darwin": "/bin/sh: banana: command not found\n",
+        "Linux": "/bin/sh: 1: banana: not found\n",
     }
 
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        shpyx.run("blabla")
+        shpyx.run("banana")
 
     assert exc.value.result.stderr == stderr_by_platform[_SYSTEM]
 

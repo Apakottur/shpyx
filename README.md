@@ -12,14 +12,14 @@ Use `shpyx.run` to run a shell command in a subprocess:
 
 ```python
 >>> import shpyx
+>>> shpyx.run("echo 1")
+ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 >>> shpyx.run("echo 1").return_code
 0
 >>> shpyx.run("echo 1").stdout
 '1\n'
 >>> shpyx.run("echo 1").stderr
 ''
->>> shpyx.run("echo 1")
-ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
 ## Installation
@@ -168,10 +168,11 @@ Relevant Python libraries:
 - [subprocess](https://docs.python.org/3/library/subprocess.html)
 - [shlex](https://docs.python.org/3/library/shlex.html)
 
-Other user libraries for running shell commands in Python:
+Other 3rd-party libraries for running shell commands in Python:
 
 - [sarge](https://github.com/vsajip/sarge)
 - [sh](https://github.com/amoffat/sh)
+- [invoke](https://github.com/pyinvoke/invoke)
 
 ## Contributing
 

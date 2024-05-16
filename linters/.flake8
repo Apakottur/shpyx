@@ -1,22 +1,4 @@
 [flake8]
-per-file-ignores =
-    #################################
-    # Ignore warnings in stub files #
-    #################################
-    *.pyi:
-    # Multiple statements on one line
-    E701,
-    # Class name 'geodesic' should use CapWords convention
-    N801,
-    # Function name X should be lowercase
-    N802,
-    # Argument name X should be lowercase
-    N803,
-    # Variable X in class scope should not be mixedCase
-    N815,
-    # Only operators and comments are allowed after a closing bracket on a new line
-    PAR104
-
 # Enable everything by default.
 select = A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 
@@ -24,6 +6,10 @@ ignore =
     ################################################
     # Ignored - we rely on ruff to format our code #
     ################################################
+    # Whitespace after '{'
+    E201
+    # Whitespace before '}'
+    E202
     # Whitespace before ':'
     E203
     # At least two spaces before inline comment
@@ -50,6 +36,10 @@ ignore =
     B023
     # Unnecessary generator
     C401
+    # Unnecessary list comprehension
+    C403
+    # Unnecessary set comprehension
+    C416
     # Unnecessary list comprehension
     C419
     # Module level import not at top of file

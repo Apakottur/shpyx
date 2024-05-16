@@ -4,8 +4,6 @@
 ####################
 # Import discovery #
 ####################
-# mypy_path =
-
 # Suppresses error messages about imports that cannot be resolved.
 # This can be enabled per-module.
 ignore_missing_imports = false
@@ -67,7 +65,7 @@ enable_error_code = [
   "truthy-iterable",
   "ignore-without-code",
   "unused-awaitable",
-  # "explicit-override",
+  "explicit-override",
 ]
 implicit_reexport = false
 strict_concatenate = true
@@ -90,7 +88,6 @@ incremental = true
 ####################
 # Advanced options #
 ####################
-# plugins =
 warn_incomplete_stub = true
 #####################
 # Report generation #
