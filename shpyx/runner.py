@@ -259,9 +259,9 @@ class Runner:
 
         # Initialize the subprocess object.
         try:
-            p = subprocess.Popen(
+            p = subprocess.Popen(  # noqa: S603
                 args,
-                shell=use_shell,  # noqa: S603
+                shell=use_shell,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=cmd_env,
