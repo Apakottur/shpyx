@@ -38,6 +38,7 @@ ignore = [
   ###########################################
   "COM812", # Trailing comma missing
   "E501", # Line too long
+  "ISC001", # Implicitly concatenated strings on a single line
   ##############
   # Pydocstyle #
   ##############
