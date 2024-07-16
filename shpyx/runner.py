@@ -158,7 +158,9 @@ class Runner:
         success = True
 
         # Verify return code.
-        if _is_action_required(user=verify_return_code, default=self._verify_return_code):
+        if _is_action_required(
+            user=verify_return_code, default=self._verify_return_code
+        ):
             success &= result.return_code == 0
 
         # Verify stderr.
@@ -169,7 +171,9 @@ class Runner:
             return_code_str = str(result.return_code)
 
             # Add the signal name, if applicable.
-            if _is_action_required(user=use_signal_names, default=self._use_signal_names):
+            if _is_action_required(
+                user=use_signal_names, default=self._use_signal_names
+            ):
                 try:
                     signal_name: str = signal.Signals(result.return_code).name
                     return_code_str += f" ({signal_name})"
@@ -259,9 +263,9 @@ class Runner:
 
         # Initialize the subprocess object.
         try:
-            p = subprocess.Popen(
+            p = subprocess.Popen(  # noqa: S603
                 args,
-                shell=use_shell,  # noqa: S603
+                shell=use_shell,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=cmd_env,
