@@ -1,3 +1,0 @@
-[darglint]
-docstring_style=google
-ignore=DAR101,DAR201,DAR301

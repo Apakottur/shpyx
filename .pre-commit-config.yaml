@@ -59,7 +59,7 @@ repos:
         args: [--config-path, ./linters]
         additional_dependencies: ["@biomejs/biome@1.8.3"]
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.10.1
+    rev: v8.13.1
     hooks:
       - id: cspell
         exclude: \.(csv|json|txt|lock)$
@@ -76,21 +76,15 @@ repos:
       - id: python-check-mock-methods
       - id: python-no-log-warn
       - id: python-use-type-annotations
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
-    rev: v0.3.1
-    hooks:
-      - id: absolufy-imports
-        types: [file]
-        types_or: [python, pyi]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.2
+    rev: v0.5.6
     hooks:
       - id: ruff
         args: [--config, ./linters/ruff.toml]
       - id: ruff-format
         args: [--config, ./linters/ruff.toml]
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.0
+    rev: 7.1.1
     hooks:
       - id: flake8
         additional_dependencies:
@@ -99,14 +93,10 @@ repos:
           - flake8-picky-parentheses==0.5.5
           - flake8-pyi==24.6.0
           - pep8-naming==0.14.1
-          - pydoclint==0.5.4
+          - pydoclint==0.5.6
         args: [--config, ./linters/.flake8]
         types: [file]
         types_or: [python, pyi]
-  - repo: https://github.com/terrencepreilly/darglint
-    rev: v1.8.1
-    hooks:
-      - id: darglint
   - repo: https://github.com/jendrikseipp/vulture
     rev: v2.11
     hooks:
