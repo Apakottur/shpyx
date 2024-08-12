@@ -5,7 +5,7 @@ build-backend = "poetry.masonry.api"
 [tool.poetry]
 name = "shpyx"
 packages = [{include = "shpyx"}]
-version = "0.0.28"
+version = "0.0.29"
 description = "Run shell commands in Python"
 authors = ["Yossi Rozantsev"]
 license = "MIT"
