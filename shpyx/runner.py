@@ -222,7 +222,7 @@ class Runner:
         Raises:
             ShpyxInternalError: Internal error when executing the command.
         """
-        tmp_file = tempfile.NamedTemporaryFile()
+        tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
 
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.

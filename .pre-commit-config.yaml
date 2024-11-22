@@ -5,7 +5,7 @@ repos:
   # GENERAL #
   ###########
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=2000"]
@@ -37,7 +37,7 @@ repos:
       - id: shfmt
         args: [-sr, -i 4]
   - repo: https://github.com/pappasam/toml-sort
-    rev: v0.23.1
+    rev: v0.24.2
     hooks:
       - id: toml-sort
         files: pyproject.toml
@@ -57,9 +57,9 @@ repos:
     hooks:
       - id: biome-check
         args: [--config-path, ./linters]
-        additional_dependencies: ["@biomejs/biome@1.9.2"]
+        additional_dependencies: ["@biomejs/biome@1.9.4"]
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.13.3
+    rev: v8.16.0
     hooks:
       - id: cspell
         exclude: \.(csv|json|txt|lock)$
@@ -77,7 +77,7 @@ repos:
       - id: python-no-log-warn
       - id: python-use-type-annotations
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.8
+    rev: v0.8.0
     hooks:
       - id: ruff
         args: [--config, ./linters/ruff.toml]
@@ -88,8 +88,8 @@ repos:
     hooks:
       - id: flake8
         additional_dependencies:
-          - flake8-bugbear==24.8.19
-          - flake8-comprehensions==3.15.0
+          - flake8-bugbear==24.10.31
+          - flake8-comprehensions==3.16.0
           - flake8-picky-parentheses==0.5.5
           - flake8-pyi==24.9.0
           - pep8-naming==0.14.1
@@ -98,7 +98,7 @@ repos:
         types: [file]
         types_or: [python, pyi]
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.12
+    rev: v2.13
     hooks:
       - id: vulture
         args: ["shpyx", "tests"]
