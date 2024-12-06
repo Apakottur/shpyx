@@ -10,7 +10,7 @@ import tempfile
 import time
 from typing import TYPE_CHECKING
 
-from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
+from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
 
 if TYPE_CHECKING:
@@ -221,6 +221,7 @@ class Runner:
             The result, as a `ShellCmdResult` object.
 
         Raises:
+            ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
         tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
@@ -238,6 +239,8 @@ class Runner:
                 elif _SYSTEM == "Darwin":
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
                     args = f"script -q {tmp_file.name} {cmd_str}"
+                elif _SYSTEM == "Windows":
+                    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
 
         else:
             # When the arguments are a list, there is no need to use an actual shell.
