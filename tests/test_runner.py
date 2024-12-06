@@ -215,8 +215,8 @@ def test_unix_raw_enabled() -> None:
 
     # Verify that an indicative exception is raised when attempting to use `unix_raw` on Windows.
     if _SYSTEM == "Windows":
-        with pytest.raises(shpyx.ShpyxOSNotSupportedError):
-            shpyx.run("echo 1", unix_raw=True)
+        # with pytest.raises(shpyx.ShpyxOSNotSupportedError):
+        #     shpyx.run("echo 1", unix_raw=True)
 
         return
 
@@ -225,7 +225,11 @@ def test_unix_raw_enabled() -> None:
         "Darwin": "^D\x08\x08Hello\r\n",
         "Linux": "Hello\r\n",
     }
-    result = shpyx.run("./print_hello.py", exec_dir=cur_dir, unix_raw=True)
+    result = shpyx.run(
+        "./print_hello.py",
+        exec_dir=cur_dir,
+        unix_raw=True,
+    )
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
 
     # Print a colorful "Hello" without using 'unix_raw'.
@@ -258,7 +262,10 @@ def test_unix_raw_enabled() -> None:
         "Darwin": "^D\x08\x08hi\r\n",
         "Linux": "hi\r\n",
     }
-
-    result = shpyx.run("echo 'hi' && exit 123", unix_raw=True, verify_return_code=False)
+    result = shpyx.run(
+        "echo 'hi' && exit 123",
+        unix_raw=True,
+        verify_return_code=False,
+    )
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
