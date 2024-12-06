@@ -217,7 +217,8 @@ class Runner:
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
 
-        Returns: The result, as a `ShellCmdResult` object.
+        Returns:
+            The result, as a `ShellCmdResult` object.
 
         Raises:
             ShpyxInternalError: Internal error when executing the command.

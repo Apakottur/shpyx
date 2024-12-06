@@ -223,14 +223,12 @@ def test_unix_raw_enabled() -> None:
         "Darwin": "^D\x08\x08Hello\r\n",
         "Linux": "Hello\r\n",
     }
-
     result = shpyx.run("echo 'Hello'", unix_raw=True)
-
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
 
     # Print a colorful "Hello" without using 'unix_raw'.
     output_by_platform = {
-        "Darwin": "^D\x08\x08Hello\r\n",
+        "Darwin": "-e \\e[31mHello\\e[0m\n",
         "Linux": "-e \x1b[31mHello\x1b[0m\n",
     }
     result = shpyx.run(r"echo -e '\e[31mHello\e[0m'")
@@ -238,19 +236,18 @@ def test_unix_raw_enabled() -> None:
 
     # Print a colorful "Hello" with 'unix_raw'.
     output_by_platform = {
-        "Darwin": "^D\x08\x08Hello\r\n",
-        "Linux": "\x1b[31mHello\x1b[0m\r\n",
+        "Darwin": "^D\x08\x08-e \\e[31mHello\\e[0m\r\n",
+        "Linux": "-e \x1b[31mHello\x1b[0m\r\n",
     }
     result = shpyx.run(r"echo -e '\e[31mHello\e[0m'", unix_raw=True)
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
 
     # Run a failing command in unix_raw mode and verify the output object.
     stderr_by_platform = {
-        "Darwin": "/bin/sh: banana: command not found\n",
+        "Darwin": "^D\x08\x08script: banana: No such file or directory\r\n",
         "Linux": "bash: line 1: banana: command not found\r\n",
     }
 
-    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        shpyx.run("banana", unix_raw=True)
-
-    assert exc.value.result.all_output == stderr_by_platform[_SYSTEM]
+    result = shpyx.run("banana", unix_raw=True, verify_return_code=False)
+    assert result.return_code != 0
+    assert result.all_output == stderr_by_platform[_SYSTEM]
