@@ -10,7 +10,7 @@ import tempfile
 import time
 from typing import TYPE_CHECKING
 
-from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
+from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
 
 if TYPE_CHECKING:
@@ -217,9 +217,11 @@ class Runner:
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
 
-        Returns: The result, as a `ShellCmdResult` object.
+        Returns:
+            The result, as a `ShellCmdResult` object.
 
         Raises:
+            ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
         tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
@@ -233,10 +235,12 @@ class Runner:
                 if _SYSTEM == "Linux":
                     # Old format: https://linux.die.net/man/1/script
                     # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script -q -c {shlex.quote(cmd_str)} {tmp_file.name}"
+                    args = f"script --echo always --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
                 elif _SYSTEM == "Darwin":
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
                     args = f"script -q {tmp_file.name} {cmd_str}"
+                elif _SYSTEM == "Windows":
+                    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
 
         else:
             # When the arguments are a list, there is no need to use an actual shell.

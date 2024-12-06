@@ -211,13 +211,61 @@ def test_unix_raw_enabled() -> None:
     """
     Test the `unix_raw` argument.
     """
+    cur_dir = Path(__file__).parent
+
+    # Verify that an indicative exception is raised when attempting to use `unix_raw` on Windows.
+    if _SYSTEM == "Windows":
+        with pytest.raises(shpyx.ShpyxOSNotSupportedError):
+            shpyx.run("echo 1", unix_raw=True)
+
+        return
+
+    # Print a standard "Hello" to the terminal.
     output_by_platform = {
-        "Windows": "1\r\n",
-        "Darwin": "^D\x08\x081\r\n",
-        "Linux": "1\r\n",
+        "Darwin": "^D\x08\x08Hello\r\n",
+        "Linux": "Hello\r\n",
     }
-
-    result = shpyx.run("echo 1", unix_raw=True)
-
-    # When `unix_raw` is True, the carriage return is passed on Unix as well.
+    result = shpyx.run(
+        "./print_hello.py",
+        exec_dir=cur_dir,
+        unix_raw=True,
+    )
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # Print a colorful "Hello" without using 'unix_raw'.
+    output_by_platform = {
+        "Darwin": "\x1b[6;30;42mHello\x1b[0m\n",
+        "Linux": "\x1b[6;30;42mHello\x1b[0m\n",
+    }
+    result = shpyx.run(
+        "./print_hello.py",
+        exec_dir=cur_dir,
+        env={"TEST_ENABLE_COLOR": "1"},
+    )
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # Print a colorful "Hello" with 'unix_raw'.
+    output_by_platform = {
+        "Darwin": "^D\x08\x08\x1b[6;30;42mHello\x1b[0m\r\n",
+        "Linux": "\x1b[6;30;42mHello\x1b[0m\r\n",
+    }
+    result = shpyx.run(
+        "./print_hello.py",
+        exec_dir=cur_dir,
+        env={"TEST_ENABLE_COLOR": "1"},
+        unix_raw=True,
+    )
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # Run a failing command in unix_raw mode and verify the output object.
+    stderr_by_platform = {
+        "Darwin": "^D\x08\x08hi\r\n",
+        "Linux": "hi\r\n",
+    }
+    result = shpyx.run(
+        "echo 'hi' && exit 123",
+        unix_raw=True,
+        verify_return_code=False,
+    )
+    assert result.return_code == 123
+    assert result.all_output == stderr_by_platform[_SYSTEM]

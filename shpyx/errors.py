@@ -23,3 +23,9 @@ class ShpyxInternalError(ShpyxError):
     """
     An internal error during execution of the shell command.
     """
+
+
+class ShpyxOSNotSupportedError(ShpyxError):
+    """
+    The current OS is not supported by the operation.
+    """

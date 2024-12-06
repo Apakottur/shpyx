@@ -53,7 +53,7 @@ repos:
       - id: yamllint
         args: ['--config-file', './linters/yamllint.yaml']
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.5.0
+    rev: v0.6.0
     hooks:
       - id: biome-check
         args: [--config-path, ./linters]
@@ -77,7 +77,7 @@ repos:
       - id: python-no-log-warn
       - id: python-use-type-annotations
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    rev: v0.8.2
     hooks:
       - id: ruff
         args: [--config, ./linters/ruff.toml]

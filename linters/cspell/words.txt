@@ -39,3 +39,4 @@ pypi
 ignorelist
 pythonpath
 subclassing
+showlocals
