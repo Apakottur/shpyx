@@ -211,13 +211,50 @@ def test_unix_raw_enabled() -> None:
     """
     Test the `unix_raw` argument.
     """
+    # Verify that an indicative exception is raised when attempting to use `unix_raw` on Windows.
+    if _SYSTEM == "Windows":
+        with pytest.raises(shpyx.ShpyxOSNotSupportedError):
+            shpyx.run("echo 1", unix_raw=True)
+
+        return
+
+    # Print a standard "Hello" to the terminal.
     output_by_platform = {
-        "Windows": "1\r\n",
         "Darwin": "^D\x08\x081\r\n",
-        "Linux": "1\r\n",
+        "Linux": "Hello\r\n",
     }
 
-    result = shpyx.run("echo 1", unix_raw=True)
+    result = shpyx.run("echo 'Hello'", unix_raw=True)
 
-    # When `unix_raw` is True, the carriage return is passed on Unix as well.
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # Print a colorful "Hello" without using 'unix_raw'.
+    output_by_platform = {
+        "Darwin": "^D\x08\x081\r\n",
+        "Linux": "-e e[31mHelloe[0m\n",
+    }
+
+    result = shpyx.run(r"echo -e \e[31mHello\e[0m")
+
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # Print a colorful "Hello" with 'unix_raw'.
+    output_by_platform = {
+        "Darwin": "^D\x08\x081\r\n",
+        "Linux": "e[31mHelloe[0m\r\n",
+    }
+
+    result = shpyx.run(r"echo -e \e[31mHello\e[0m", unix_raw=True)
+
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # Run a failing command in unix_raw mode and verify the output object.
+    stderr_by_platform = {
+        "Darwin": "/bin/sh: banana: command not found\n",
+        "Linux": "bash: line 1: banana: command not found\r\n",
+    }
+
+    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
+        shpyx.run("banana", unix_raw=True)
+
+    assert exc.value.result.all_output == stderr_by_platform[_SYSTEM]

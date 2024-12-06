@@ -233,7 +233,7 @@ class Runner:
                 if _SYSTEM == "Linux":
                     # Old format: https://linux.die.net/man/1/script
                     # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script -q -c {shlex.quote(cmd_str)} {tmp_file.name}"
+                    args = f"script --echo always --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
                 elif _SYSTEM == "Darwin":
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
                     args = f"script -q {tmp_file.name} {cmd_str}"

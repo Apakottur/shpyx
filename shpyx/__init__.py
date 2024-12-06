@@ -6,6 +6,7 @@ __all__ = [
     "Runner",
     "ShellCmdResult",
     "ShpyxInternalError",
+    "ShpyxOSNotSupportedError",
     "ShpyxVerificationError",
     "run",
 ]
