@@ -220,7 +220,7 @@ def test_unix_raw_enabled() -> None:
 
     # Print a standard "Hello" to the terminal.
     output_by_platform = {
-        "Darwin": "^D\x08\x081\r\n",
+        "Darwin": "^D\x08\x08Hello\r\n",
         "Linux": "Hello\r\n",
     }
 
@@ -230,7 +230,7 @@ def test_unix_raw_enabled() -> None:
 
     # Print a colorful "Hello" without using 'unix_raw'.
     output_by_platform = {
-        "Darwin": "^D\x08\x081\r\n",
+        "Darwin": "^D\x08\x08Hello\r\n",
         "Linux": "-e e[31mHelloe[0m\n",
     }
 
@@ -240,7 +240,7 @@ def test_unix_raw_enabled() -> None:
 
     # Print a colorful "Hello" with 'unix_raw'.
     output_by_platform = {
-        "Darwin": "^D\x08\x081\r\n",
+        "Darwin": "^D\x08\x08Hello\r\n",
         "Linux": "e[31mHelloe[0m\r\n",
     }
 

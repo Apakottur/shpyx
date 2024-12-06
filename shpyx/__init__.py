@@ -1,4 +1,4 @@
-from shpyx.errors import ShpyxInternalError, ShpyxVerificationError
+from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
 from shpyx.result import ShellCmdResult
 from shpyx.runner import Runner, run
 
