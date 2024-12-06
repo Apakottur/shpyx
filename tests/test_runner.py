@@ -231,21 +231,17 @@ def test_unix_raw_enabled() -> None:
     # Print a colorful "Hello" without using 'unix_raw'.
     output_by_platform = {
         "Darwin": "^D\x08\x08Hello\r\n",
-        "Linux": "-e e[31mHelloe[0m\n",
+        "Linux": "-e \x1b[31mHello\x1b[0m\n",
     }
-
-    result = shpyx.run(r"echo -e \e[31mHello\e[0m")
-
+    result = shpyx.run(r"echo -e '\e[31mHello\e[0m'")
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
 
     # Print a colorful "Hello" with 'unix_raw'.
     output_by_platform = {
         "Darwin": "^D\x08\x08Hello\r\n",
-        "Linux": "e[31mHelloe[0m\r\n",
+        "Linux": "\x1b[31mHello\x1b[0m\r\n",
     }
-
-    result = shpyx.run(r"echo -e \e[31mHello\e[0m", unix_raw=True)
-
+    result = shpyx.run(r"echo -e '\e[31mHello\e[0m'", unix_raw=True)
     _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
 
     # Run a failing command in unix_raw mode and verify the output object.
