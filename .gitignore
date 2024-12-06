@@ -1,6 +1,7 @@
 # IDE
 .idea
 venv
+.vscode
 
 # Python
 __pycache__

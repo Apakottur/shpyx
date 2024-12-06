@@ -215,8 +215,8 @@ def test_unix_raw_enabled() -> None:
 
     # Verify that an indicative exception is raised when attempting to use `unix_raw` on Windows.
     if _SYSTEM == "Windows":
-        # with pytest.raises(shpyx.ShpyxOSNotSupportedError):
-        #     shpyx.run("echo 1", unix_raw=True)
+        with pytest.raises(shpyx.ShpyxOSNotSupportedError):
+            shpyx.run("echo 1", unix_raw=True)
 
         return
 

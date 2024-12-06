@@ -39,5 +39,4 @@ pypi
 ignorelist
 pythonpath
 subclassing
-Helloe
 showlocals
