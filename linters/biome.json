@@ -10,6 +10,11 @@
       "quoteStyle": "single"
     }
   },
+  "json": {
+    "formatter": {
+      "enabled": false
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
