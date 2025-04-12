@@ -46,6 +46,8 @@ ignore =
     PAR104
     # Line break occurred before a binary operator
     W503
+    # line break after binary operator
+    W504
 
     #############################
     # Ignored - duplicates Ruff #
@@ -64,6 +66,8 @@ ignore =
     C419
     # Module level import not at top of file
     E402
+    # Multiple statements on one line (colon)
+    E701
     # Comparison to False should be 'if condition is False:' or 'if not condition:'
     E712
     # Do not assign a lambda expression, use a def

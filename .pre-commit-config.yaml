@@ -42,24 +42,25 @@ repos:
       - id: toml-sort
         files: pyproject.toml
         args: [--in-place, --ignore-case, --trailing-comma-inline-array]
-  - repo: https://github.com/ComPWA/mirrors-taplo
-    rev: v0.8.1
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
     hooks:
-      - id: taplo-docker
-        args: [format, --config, ./linters/taplo.toml]
+      - id: taplo-format
+        args: [--config, ./linters/taplo.toml]
+      - id: taplo-lint
+        args: [--config, ./linters/taplo.toml]
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.35.1
+    rev: v1.37.0
     hooks:
       - id: yamllint
         args: ['--config-file', './linters/yamllint.yaml']
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.6.0
+    rev: v1.9.4
     hooks:
       - id: biome-check
         args: [--config-path, ./linters]
-        additional_dependencies: ["@biomejs/biome@1.9.4"]
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.16.0
+    rev: v8.17.3
     hooks:
       - id: cspell
         exclude: \.(csv|json|txt|lock)$
@@ -77,28 +78,28 @@ repos:
       - id: python-no-log-warn
       - id: python-use-type-annotations
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.2
+    rev: v0.11.5
     hooks:
       - id: ruff
         args: [--config, ./linters/ruff.toml]
       - id: ruff-format
         args: [--config, ./linters/ruff.toml]
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
+    rev: 7.2.0
     hooks:
       - id: flake8
         additional_dependencies:
-          - flake8-bugbear==24.10.31
+          - flake8-bugbear==24.12.12
           - flake8-comprehensions==3.16.0
-          - flake8-picky-parentheses==0.5.5
+          - flake8-picky-parentheses==0.6.0
           - flake8-pyi==24.9.0
           - pep8-naming==0.14.1
-          - pydoclint==0.5.9
+          - pydoclint==0.6.5
         args: [--config, ./linters/.flake8]
         types: [file]
         types_or: [python, pyi]
   - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.13
+    rev: v2.14
     hooks:
       - id: vulture
         args: ["shpyx", "tests"]

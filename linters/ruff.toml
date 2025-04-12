@@ -59,6 +59,7 @@ ignore = [
   # Other checks that we don't want #
   ###################################
   "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+  "ASYNC109", # Async function definition with a `timeout` parameter
   "BLE001", # Do not catch blind exception: `Exception`
   "C901", # Method is too complex
   "EM101", # Exception must not use a string literal, assign to variable first
@@ -75,6 +76,7 @@ ignore = [
   "PLR1722", # Use `sys.exit()` instead of `exit`
   "PLR2004", # Magic value used in comparison, consider replacing with a constant variable
   "PLR5501", # Consider using `elif` instead of `else` then `if` to remove one indentation level
+  "PT003", # `scope='function'` is implied in `@pytest.fixture()`
   "PTH123", # `open()` should be replaced by `Path.open()`
   "RET505", # Unnecessary `else` after `return` statement
   "RET506", # Unnecessary `else` after `raise` statement
@@ -83,6 +85,7 @@ ignore = [
   "SIM105", # Use `contextlib.suppress()` instead of try-except-pass
   "TC001", # Move application import into a type-checking block
   "TC002", # Move third-party import into a type-checking block
+  "TC003", # Move standard library import into a type-checking block
   "TD002", # Missing author in TODO
   "TD003", # Missing issue link on the line following this TODO
   "TRY003", # Avoid specifying long messages outside the exception class
@@ -91,6 +94,7 @@ ignore = [
 [lint.isort]
 # Import sorting configuration.
 split-on-trailing-comma = false
+known-first-party = ["shpyx"]
 combine-as-imports = true
 
 [lint.pydocstyle]
