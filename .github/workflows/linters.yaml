@@ -18,10 +18,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install pre-commit requirements
-        run: |
-          sudo snap install shfmt
-
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.1
         with:
