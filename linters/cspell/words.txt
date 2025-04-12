@@ -40,3 +40,4 @@ ignorelist
 pythonpath
 subclassing
 showlocals
+mvdan

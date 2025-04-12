@@ -23,19 +23,25 @@ repos:
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
-      - id: fix-encoding-pragma
-        args: [--remove]
       - id: mixed-line-ending
         args: [--fix, lf]
       - id: requirements-txt-fixer
       - id: trailing-whitespace
+      - id: pretty-format-json
+        args: [--autofix, --no-sort-keys]
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0
     hooks:
       - id: script-must-have-extension
       - id: shellcheck
+  - repo: local
+    hooks:
       - id: shfmt
-        args: [-sr, -i 4]
+        name: shfmt
+        entry: mvdan/shfmt
+        language: docker_image
+        types: [file, shell]
+        args: [-l, -w, -s, -i, "4", -ci, -sr, -fn]
   - repo: https://github.com/pappasam/toml-sort
     rev: v0.24.2
     hooks:
@@ -49,11 +55,23 @@ repos:
         args: [--config, ./linters/taplo.toml]
       - id: taplo-lint
         args: [--config, ./linters/taplo.toml]
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.13.1-beta
+    hooks:
+      - id: hadolint-docker
+        args: [--config, ./linters/hadolint.yaml]
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.37.0
     hooks:
       - id: yamllint
         args: ['--config-file', './linters/yamllint.yaml']
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.98.1
+    hooks:
+      - id: terraform_fmt
+        args:
+          - --args=-diff
+          - --args=-recursive
   - repo: https://github.com/biomejs/pre-commit
     rev: v1.9.4
     hooks:
@@ -66,6 +84,10 @@ repos:
         exclude: \.(csv|json|txt|lock)$
         args: ["lint", "-c", "./linters/cspell.json", "--no-progress",
                "--cache", "--cache-location", "./linters/.cspellcache"]
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
   ##########
   # PYTHON #
   ##########
