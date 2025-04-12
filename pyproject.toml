@@ -27,14 +27,14 @@ include = ["shpyx/py.typed"]
 [tool.poetry.dependencies]
 python = "^3.9"
 
-[tool.poetry.dev-dependencies]
-mypy = "1.13.0"
-pre-commit = "4.0.1"
-pytest = "8.3.4"
-pytest-cov = "6.0.0"
-pytest-mock = "3.14.0"
-
 [tool.poetry.extras]
+
+[tool.poetry.group.dev.dependencies]
+mypy = "1.15.0"
+pre-commit = "4.2.0"
+pytest = "8.3.5"
+pytest-cov = "6.1.1"
+pytest-mock = "3.14.0"
 
 [tool.poetry.scripts]
 
