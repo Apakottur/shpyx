@@ -112,4 +112,3 @@ max-line-length = 120
 style = google
 arg-type-hints-in-docstring = False
 skip-checking-short-docstrings = False
-
