@@ -5,7 +5,7 @@ repos:
   # GENERAL #
   ###########
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=2000"]
@@ -61,24 +61,24 @@ repos:
       - id: hadolint-docker
         args: [--config, ./linters/hadolint.yaml]
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: ['--config-file', './linters/yamllint.yaml']
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.98.1
+    rev: v1.100.0
     hooks:
       - id: terraform_fmt
         args:
           - --args=-diff
           - --args=-recursive
   - repo: https://github.com/biomejs/pre-commit
-    rev: v1.9.4
+    rev: v2.1.4
     hooks:
       - id: biome-check
-        args: [--config-path, ./linters]
+        args: [--config-path, ./linters/biome.template.json]
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.17.3
+    rev: v9.2.0
     hooks:
       - id: cspell
         exclude: \.(csv|json|txt|lock)$
@@ -100,14 +100,14 @@ repos:
       - id: python-no-log-warn
       - id: python-use-type-annotations
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.5
+    rev: v0.12.8
     hooks:
       - id: ruff
         args: [--config, ./linters/ruff.toml]
       - id: ruff-format
         args: [--config, ./linters/ruff.toml]
   - repo: https://github.com/pycqa/flake8
-    rev: 7.2.0
+    rev: 7.3.0
     hooks:
       - id: flake8
         additional_dependencies:

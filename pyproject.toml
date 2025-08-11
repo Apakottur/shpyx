@@ -5,7 +5,7 @@ build-backend = "poetry.masonry.api"
 [tool.poetry]
 name = "shpyx"
 packages = [{include = "shpyx"}]
-version = "0.0.33"
+version = "0.0.34"
 description = "Run shell commands in Python"
 authors = ["Yossi Rozantsev"]
 license = "MIT"
@@ -30,11 +30,11 @@ python = "^3.9"
 [tool.poetry.extras]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "1.15.0"
-pre-commit = "4.2.0"
-pytest = "8.3.5"
-pytest-cov = "6.1.1"
-pytest-mock = "3.14.0"
+mypy = "1.17.1"
+pre-commit = "4.3.0"
+pytest = "8.4.1"
+pytest-cov = "6.2.1"
+pytest-mock = "3.14.1"
 
 [tool.poetry.scripts]
 
