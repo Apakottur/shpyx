@@ -1,10 +1,4 @@
 {
-  "files": {
-    "includes": [
-      "**",
-      "!client"
-    ]
-  },
   "formatter": {
     "enabled": true,
     "lineWidth": 120,
