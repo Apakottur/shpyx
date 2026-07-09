@@ -20,10 +20,16 @@ runs:
       run: |
           uv sync --frozen
 
-    # Activate the Python environment.
-    # See: https://stackoverflow.com/a/74669486
+    # Put the project virtualenv on PATH for subsequent steps, so tools can be
+    # invoked directly (e.g. `pytest`). Uses $GITHUB_PATH, which is applied
+    # regardless of the step's shell and works on all runners.
     - name: Activate Python venv
       shell: bash
       run: |
-        source .venv/bin/activate
-        echo PATH=$PATH >> $GITHUB_ENV
+        if [ -d .venv/Scripts ]; then
+          # Windows layout ('.venv/Scripts'); '$(pwd -W)' yields a Windows-style path.
+          echo "$(pwd -W)/.venv/Scripts" >> "$GITHUB_PATH"
+        else
+          # Unix layout ('.venv/bin').
+          echo "$(pwd)/.venv/bin" >> "$GITHUB_PATH"
+        fi
