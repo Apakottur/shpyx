@@ -16,8 +16,6 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: ./.github/workflows/util/setup_python
-        with:
-          python-version: "3.14"
 
       - name: Determine version
         id: version

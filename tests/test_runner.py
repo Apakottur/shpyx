@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 import pytest_mock
-
 import shpyx
 
 # Platform OS.

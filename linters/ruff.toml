@@ -6,7 +6,7 @@
 line-length = 120
 
 # Python version.
-target-version = "py312"
+target-version = "py314"
 
 # Enable autofixing.
 fix = true
@@ -94,7 +94,7 @@ ignore = [
 [lint.isort]
 # Import sorting configuration.
 split-on-trailing-comma = false
-known-first-party = ["shpyx"]
+known-first-party = ["src"]
 combine-as-imports = true
 
 [lint.pydocstyle]
