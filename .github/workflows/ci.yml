@@ -37,7 +37,7 @@ jobs:
         run: mypy --config-file src/mypy.toml .
 
       - name: Run ty
-        run: uv run ty check --config-file shpyx/ty.toml .
+        run: ty check --project . --config-file linters/ty.toml
 
   unit-tests:
     strategy:
@@ -55,7 +55,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Run unit tests
-        run: uv run pytest --showlocals -c tests/pytest.ini tests
+        run: pytest --showlocals -c tests/pytest.ini tests
 
   check:
     if: always()

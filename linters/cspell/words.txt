@@ -41,3 +41,4 @@ pythonpath
 subclassing
 showlocals
 mvdan
+typeshed

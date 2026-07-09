@@ -57,16 +57,24 @@ def test_empty_command() -> None:
 
 def test_invalid_command() -> None:
     stderr_by_platform = {
-        "Windows": "'banana' is not recognized as an internal or external command,\r\n"
-        "operable program or batch file.\r\n",
-        "Darwin": "/bin/sh: banana: command not found\n",
-        "Linux": "/bin/sh: 1: banana: not found\n",
+        "Windows": [
+            "'banana' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n",
+        ],
+        "Darwin": [
+            "/bin/sh: banana: command not found\n",
+        ],
+        "Linux": [
+            # '/bin/sh' is 'dash' (e.g. Debian/Ubuntu).
+            "/bin/sh: 1: banana: command not found\n",
+            # '/bin/sh' is 'bash' (e.g. Arch/CachyOS).
+            "/bin/sh: line 1: banana: command not found\n",
+        ],
     }
 
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
         shpyx.run("banana")
 
-    assert exc.value.result.stderr == stderr_by_platform[_SYSTEM]
+    assert exc.value.result.stderr in stderr_by_platform[_SYSTEM]
 
 
 def test_log_cmd(capfd: pytest.CaptureFixture[str]) -> None:
@@ -158,7 +166,7 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> Non
     def _popen(*_args: str, **_kwargs: str) -> None:
         raise OSError("Some SO error")
 
-    mocker.patch("shpyx.runner.subprocess.Popen", _popen)
+    mocker.patch("src.runner.subprocess.Popen", _popen)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
