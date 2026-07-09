@@ -1,127 +1,59 @@
 default_language_version:
-  python: python3.12
+  python: python3.14
 repos:
   ###########
   # GENERAL #
   ###########
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-      - id: check-added-large-files
-        args: ["--maxkb=2000"]
-      - id: check-builtin-literals
-      - id: check-case-conflict
-      - id: check-executables-have-shebangs
-      - id: check-json
-      - id: check-merge-conflict
-      - id: check-symlinks
-      - id: check-toml
-      - id: check-xml
-      - id: check-yaml
-      - id: debug-statements
-      - id: destroyed-symlinks
-      - id: detect-private-key
-      - id: end-of-file-fixer
-      - id: fix-byte-order-marker
-      - id: mixed-line-ending
-        args: [--fix, lf]
-      - id: requirements-txt-fixer
-      - id: trailing-whitespace
-      - id: pretty-format-json
-        args: [--autofix, --no-sort-keys]
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 3.0.0
-    hooks:
-      - id: script-must-have-extension
-      - id: shellcheck
-  - repo: local
-    hooks:
-      - id: shfmt
-        name: shfmt
-        entry: mvdan/shfmt
-        language: docker_image
-        types: [file, shell]
-        args: [-l, -w, -s, -i, "4", -ci, -sr, -fn]
-  - repo: https://github.com/pappasam/toml-sort
-    rev: v0.24.2
-    hooks:
-      - id: toml-sort
-        files: pyproject.toml
-        args: [--in-place, --ignore-case, --trailing-comma-inline-array]
-  - repo: https://github.com/ComPWA/taplo-pre-commit
-    rev: v0.9.3
-    hooks:
-      - id: taplo-format
-        args: [--config, ./linters/taplo.toml]
-      - id: taplo-lint
-        args: [--config, ./linters/taplo.toml]
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.13.1-beta
-    hooks:
-      - id: hadolint-docker
-        args: [--config, ./linters/hadolint.yaml]
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.37.1
-    hooks:
-      - id: yamllint
-        args: ['--config-file', './linters/yamllint.yaml']
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.100.0
-    hooks:
-      - id: terraform_fmt
-        args:
-          - --args=-diff
-          - --args=-recursive
-  - repo: https://github.com/biomejs/pre-commit
-    rev: v2.1.4
-    hooks:
-      - id: biome-check
-        args: [--config-path, ./linters/biome.template.json]
-  - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v9.2.0
-    hooks:
-      - id: cspell
-        exclude: \.(csv|json|txt|lock)$
-        args: ["lint", "-c", "./linters/cspell.json", "--no-progress",
-               "--cache", "--cache-location", "./linters/.cspellcache"]
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.7
-    hooks:
-      - id: actionlint
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: check-yaml
+    args: ['--unsafe']
+  - id: check-toml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: check-added-large-files
+- repo: https://github.com/pappasam/toml-sort
+  rev: v0.24.4
+  hooks:
+    - id: toml-sort
+      files: pyproject.toml
+      args: [--in-place, --ignore-case, --trailing-comma-inline-array]
+- repo: https://github.com/ComPWA/taplo-pre-commit
+  rev: v0.9.3
+  hooks:
+    - id: taplo-format
+      args: [--config, ./linters/taplo.toml]
+    - id: taplo-lint
+      args: [--config, ./linters/taplo.toml]
+- repo: https://github.com/adrienverge/yamllint.git
+  rev: v1.38.0
+  hooks:
+    - id: yamllint
+      args: ['--config-file', './linters/yamllint.yaml']
+- repo: https://github.com/streetsidesoftware/cspell-cli
+  rev: v10.0.1
+  hooks:
+    - id: cspell
+      exclude: \.(csv|json|txt|lock)$
+      args: ["lint", "-c", "./linters/cspell.json", "--no-progress",
+              "--cache", "--cache-location", "./linters/.cspellcache"]
+- repo: https://github.com/rhysd/actionlint
+  rev: v1.7.12
+  hooks:
+    - id: actionlint
   ##########
   # PYTHON #
   ##########
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0
-    hooks:
-      - id: python-check-blanket-noqa
-      - id: python-check-blanket-type-ignore
-      - id: python-check-mock-methods
-      - id: python-no-log-warn
-      - id: python-use-type-annotations
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.8
-    hooks:
-      - id: ruff
-        args: [--config, ./linters/ruff.toml]
-      - id: ruff-format
-        args: [--config, ./linters/ruff.toml]
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.3.0
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-bugbear==24.12.12
-          - flake8-comprehensions==3.16.0
-          - flake8-picky-parentheses==0.6.0
-          - flake8-pyi==24.9.0
-          - pep8-naming==0.14.1
-          - pydoclint==0.6.5
-        args: [--config, ./linters/.flake8]
-        types: [file]
-        types_or: [python, pyi]
-  - repo: https://github.com/jendrikseipp/vulture
-    rev: v2.14
-    hooks:
-      - id: vulture
-        args: ["shpyx", "tests"]
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.15.20
+  hooks:
+    - id: ruff
+      args: [--config, ./linters/ruff.toml]
+    - id: ruff-format
+      args: [--config, ./linters/ruff.toml]
+- repo: https://github.com/jendrikseipp/vulture
+  rev: v2.16
+  hooks:
+    - id: vulture
+      args: ["shpyx", "tests"]

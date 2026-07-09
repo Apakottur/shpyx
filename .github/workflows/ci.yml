@@ -41,6 +41,9 @@ jobs:
       - name: Run mypy
         run: uv run mypy --config-file shpyx/mypy.toml .
 
+      - name: Run ty
+        run: uv run ty check --config-file shpyx/ty.toml .
+
   unit-tests:
     strategy:
       matrix:

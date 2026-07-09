@@ -1,6 +1,5 @@
-# Utility action that installs uv and the project's Python environment.
 name: Setup Python
-description: Install uv, the requested Python version, and the project dependencies.
+description: Install Python, uv and dependencies.
 
 inputs:
   python-version:

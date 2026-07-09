@@ -2,16 +2,6 @@
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
-[dependency-groups]
-dev = [
-  "mypy==1.17.1",
-  "pre-commit==4.3.0",
-  "pytest==8.4.1",
-  "pytest-cov==6.2.1",
-  "pytest-mock==3.14.1",
-  "ruff==0.12.8",
-]
-
 [project]
 name = "shpyx"
 version = "0.0.34"
@@ -29,7 +19,15 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = [
+  "mypy==2.2.0",
+  "pre-commit==4.3.0",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "pytest-mock==3.14.1",
+  "ruff==0.12.8",
+  "ty>=0.0.57",
+]
 
 [project.urls]
 homepage = "https://github.com/Apakottur/shpyx"
