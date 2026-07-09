@@ -20,7 +20,7 @@ runs:
       run: |
           uv sync --frozen
 
-    # Put the project virtualenv on PATH for subsequent steps, so tools can be
+    # Put the project virtual environment on PATH for subsequent steps, so tools can be
     # invoked directly (e.g. `pytest`). Uses $GITHUB_PATH, which is applied
     # regardless of the step's shell and works on all runners.
     - name: Activate Python venv
