@@ -17,4 +17,13 @@ runs:
 
     - name: Install Python dependencies
       shell: bash
-      run: uv sync --frozen
+      run: |
+          uv sync --frozen
+
+    # Activate the Python environment.
+    # See: https://stackoverflow.com/a/74669486
+    - name: Activate Python venv
+      shell: bash
+      run: |
+        source .venv/bin/activate
+        echo PATH=$PATH >> $GITHUB_ENV
