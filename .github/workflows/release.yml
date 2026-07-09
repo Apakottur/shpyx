@@ -19,10 +19,31 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Determine version
+        id: version
+        run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Check if version is already released
+        id: check
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          code=$(curl -fsS -o /dev/null -w "%{http_code}" \
+            "https://pypi.org/pypi/shpyx/${VERSION}/json" || true)
+          if [ "$code" = "200" ]; then
+            echo "shpyx ${VERSION} is already on PyPI, skipping release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "shpyx ${VERSION} is new, releasing."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build
+        if: steps.check.outputs.publish == 'true'
         run: uv build
 
       - name: Publish
+        if: steps.check.outputs.publish == 'true'
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: uv publish
