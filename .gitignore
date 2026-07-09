@@ -1,11 +1,14 @@
 # IDE
 .idea
 venv
+.venv
 .vscode
 
 # Python
 __pycache__
 .pytest_cache
+.mypy_cache
+.ruff_cache
 .coverage
 dist
 

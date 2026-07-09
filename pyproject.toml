@@ -1,19 +1,26 @@
 [build-system]
-requires = ["poetry==1.8.3"]
-build-backend = "poetry.masonry.api"
+build-backend = "hatchling.build"
+requires = ["hatchling"]
 
-[tool.poetry]
+[dependency-groups]
+dev = [
+  "mypy==1.17.1",
+  "pre-commit==4.3.0",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "pytest-mock==3.14.1",
+  "ruff==0.12.8",
+]
+
+[project]
 name = "shpyx"
-packages = [{include = "shpyx"}]
 version = "0.0.34"
 description = "Run shell commands in Python"
-authors = ["Yossi Rozantsev"]
-license = "MIT"
+authors = [{name = "Yossi Rozantsev"}]
+license = {text = "MIT"}
 readme = "README.md"
+requires-python = ">=3.9"
 keywords = ["shell", "bash", "terminal", "script"]
-homepage = "https://github.com/Apakottur/shpyx"
-repository = "https://github.com/Apakottur/shpyx"
-documentation = "https://github.com/Apakottur/shpyx"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -22,20 +29,15 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-include = ["shpyx/py.typed"]
+dependencies = []
 
-[tool.poetry.dependencies]
-python = "^3.9"
+[project.urls]
+homepage = "https://github.com/Apakottur/shpyx"
+repository = "https://github.com/Apakottur/shpyx"
+documentation = "https://github.com/Apakottur/shpyx"
 
-[tool.poetry.extras]
+[tool.hatch.build.targets.wheel]
+packages = ["shpyx"]
 
-[tool.poetry.group.dev.dependencies]
-mypy = "1.17.1"
-pre-commit = "4.3.0"
-pytest = "8.4.1"
-pytest-cov = "6.2.1"
-pytest-mock = "3.14.1"
-
-[tool.poetry.scripts]
-
-[tool.poetry.urls]
+[tool.uv]
+package = true
