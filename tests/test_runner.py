@@ -65,7 +65,7 @@ def test_invalid_command() -> None:
         ],
         "Linux": [
             # '/bin/sh' is 'dash' (e.g. Debian/Ubuntu).
-            "/bin/sh: 1: banana: command not found\n",
+            "/bin/sh: 1: banana: not found\n",
             # '/bin/sh' is 'bash' (e.g. Arch/CachyOS).
             "/bin/sh: line 1: banana: command not found\n",
         ],
