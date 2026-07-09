@@ -1,4 +1,4 @@
-from shpyx.result import ShellCmdResult
+from src.result import ShellCmdResult
 
 
 class ShpyxError(Exception):

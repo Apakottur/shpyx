@@ -1,6 +1,6 @@
-from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
-from shpyx.result import ShellCmdResult
-from shpyx.runner import Runner, run
+from src.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
+from src.result import ShellCmdResult
+from src.runner import Runner, run
 
 __all__ = [
     "Runner",

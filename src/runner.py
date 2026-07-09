@@ -10,8 +10,8 @@ import tempfile
 import time
 from typing import TYPE_CHECKING
 
-from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
-from shpyx.result import ShellCmdResult
+from src.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
+from src.result import ShellCmdResult
 
 if TYPE_CHECKING:
     from pathlib import Path
