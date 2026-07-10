@@ -207,7 +207,12 @@ ty check --config-file linters/ty.toml src tests
 
 ### Releasing
 
-To release a new version:
+The package version is derived from the git tag (via `hatch-vcs`), so there is nothing to bump in
+`pyproject.toml`. To release a new version, push a `v`-prefixed tag from `main`:
 ```shell
-./scripts/release.py
+git tag v0.0.37
+git push origin v0.0.37
 ```
+
+This triggers the `Release` workflow, which builds the package, publishes it to PyPI using Trusted
+Publishing (OIDC, no stored token), and creates a GitHub Release with auto-generated notes.

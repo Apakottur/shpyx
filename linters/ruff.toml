@@ -126,6 +126,3 @@ ban-relative-imports = "all"
 "tests/*" = [
   "S101", # Use of `assert` detected
 ]
-"scripts/*" = [
-  "T201", # `print` found (scripts are CLIs that talk to the user via stdout)
-]
