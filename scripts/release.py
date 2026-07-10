@@ -1,63 +1,48 @@
-#!/usr/bin/env -S uv run python
+#!/usr/bin/env python
 """
-Cut a new shpyx release.
-
-The published version is derived from the git tag (via hatch-vcs), so releasing
-is simply a matter of pushing a `v*` tag to `main`. This script does that safely:
-
-  1. Verify the working tree is clean and on `main`.
-  2. Fetch and fast-forward to `origin/main`.
-  3. Look up the latest version currently on PyPI.
-  4. Let the user pick the next version (patch / minor / major).
-  5. If the tag already exists (e.g. a previous release run failed), offer to
-     delete it first.
-  6. Create the tag and push it, which triggers the `Release` GitHub Action.
-
-Run from the repository root with `./scripts/release.py` (the shebang uses `uv run`,
-so shpyx and its environment are set up automatically).
+Create a new shpyx release.
 """
 
-import json
 import sys
-import urllib.request
+
+import httpx
 
 import shpyx
 
-PYPI_URL = "https://pypi.org/pypi/shpyx/json"
-MAIN_BRANCH = "main"
+_PYPI_URL = "https://pypi.org/pypi/shpyx/json"
+_MAIN_BRANCH = "main"
 
 
-def abort(message: str) -> None:
-    """Print an error and exit with a non-zero status."""
+def _abort(message: str) -> None:
     print(f"\n❌ {message}")
     sys.exit(1)
 
 
-def confirm(question: str) -> bool:
-    """Ask a yes/no question, defaulting to 'no'."""
-    return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
+def _confirm(question: str) -> None:
+    user_input = input(f"{question} [y/N] ").strip().lower()
+    if user_input != "y":
+        _abort("Aborted by user.")
 
 
 def main() -> None:
     # Verify we are on a clean, up-to-date `main` before tagging.
     branch = shpyx.run("git rev-parse --abbrev-ref HEAD").stdout.strip()
-    if branch != MAIN_BRANCH:
-        abort(f"Must be on the '{MAIN_BRANCH}' branch, but currently on '{branch}'.")
-
+    if branch != _MAIN_BRANCH:
+        _abort(f"Must be on the '{_MAIN_BRANCH}' branch, but currently on '{branch}'.")
     if shpyx.run("git status --porcelain").stdout.strip():
-        abort("Working tree is not clean. Commit or stash your changes first.")
+        _abort("Working tree is not clean. Commit or stash your changes first.")
 
+    # Fetch and fast-forward to origin/main.
     print("Fetching from origin...")
-    shpyx.run("git fetch origin --tags --prune", log_output=True)
-    # Fast-forward only: aborts if local `main` has diverged from origin.
-    shpyx.run(f"git pull --ff-only origin {MAIN_BRANCH}", log_output=True)
+    shpyx.run("git pull", log_output=True)
 
     # Look up the latest published version on PyPI.
-    with urllib.request.urlopen(PYPI_URL) as response:  # noqa: S310 (trusted, hardcoded https URL)
-        version = json.load(response)["info"]["version"]
+    pypi_response = httpx.get(_PYPI_URL)
+    pypi_response.raise_for_status()
+    version = pypi_response.json()["info"]["version"]
     parts = version.split(".")
     if len(parts) != 3 or not all(part.isdigit() for part in parts):
-        abort(f"Cannot parse PyPI version {version!r} as 'major.minor.patch'.")
+        _abort(f"Cannot parse PyPI version {version!r} as 'major.minor.patch'.")
     major, minor, patch = (int(part) for part in parts)
 
     # Let the user pick the next version.
@@ -79,18 +64,17 @@ def main() -> None:
     remote = shpyx.run(f"git ls-remote --tags origin {tag}").stdout.strip()
     if local or remote:
         print(f"\n⚠️  Tag {tag} already exists (a previous release may have failed).")
-        if not confirm(f"Delete the existing {tag} and recreate it?"):
-            abort("Aborted: tag already exists.")
+        _confirm(f"Delete the existing {tag} and recreate it?")
         # Local delete may fail if the tag only exists on the remote; ignore that.
         shpyx.run(f"git tag --delete {tag}", verify_return_code=False)
-        shpyx.run(f"git push --delete origin {tag}", verify_return_code=False, log_output=True)
+        shpyx.run(f"git push --delete origin {tag}", verify_return_code=False)
 
-    if not confirm(f"\nCreate and push tag {tag} to trigger the release?"):
-        abort("Aborted by user.")
-
+    # Create and push the tag.
+    _confirm(f"\nCreate and push tag {tag} to trigger the release?")
     shpyx.run(f"git tag {tag}")
-    shpyx.run(f"git push origin {tag}", log_output=True)
+    shpyx.run(f"git push origin {tag}")
 
+    # Print the release URL.
     print(f"\n✅ Pushed {tag}. The Release workflow is now running:")
     print("   https://github.com/Apakottur/shpyx/actions/workflows/release.yml")
 

@@ -4,6 +4,7 @@ requires = ["hatchling", "hatch-vcs"]
 
 [dependency-groups]
 dev = [
+  "httpx==0.28.1",
   "mypy==2.2.0",
   "pre-commit==4.6.0",
   "pytest-cov==7.1.0",
