@@ -4,6 +4,7 @@ requires = ["hatchling", "hatch-vcs"]
 
 [dependency-groups]
 dev = [
+  "httpx==0.28.1",
   "mypy==2.2.0",
   "pre-commit==4.6.0",
   "pytest-cov==7.1.0",
@@ -29,6 +30,12 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 
 [project.urls]

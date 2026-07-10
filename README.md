@@ -2,9 +2,9 @@
   <img src="https://github.com/Apakottur/shpyx/blob/main/shpyx.png?raw=true" />
 </p>
 
-[![PyPI](https://img.shields.io/pypi/v/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
-[![Downloads](https://img.shields.io/pypi/dm/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
-[![Python](https://img.shields.io/pypi/pyversions/shpyx?logo=pypi&logoColor=white&style=for-the-badge)](https://pypi.org/project/shpyx/)
+[![image](https://img.shields.io/pypi/v/shpyx.svg)](https://pypi.python.org/pypi/shpyx)
+[![image](https://img.shields.io/pypi/l/shpyx.svg)](https://github.com/Apakottur/shpyx/blob/main/LICENSE)
+[![image](https://img.shields.io/pypi/pyversions/shpyx.svg)](https://pypi.python.org/pypi/shpyx)
 
 **shpyx** is a simple, lightweight and typed library for running shell commands in Python.
 
@@ -207,12 +207,7 @@ ty check --config-file linters/ty.toml src tests
 
 ### Releasing
 
-The package version is derived from the git tag (via `hatch-vcs`), so there is nothing to bump in
-`pyproject.toml`. To release a new version, push a `v`-prefixed tag from `main`:
+To release a new version, run the interactive script:
 ```shell
-git tag v0.0.37
-git push origin v0.0.37
+./scripts/release.py
 ```
-
-This triggers the `Release` workflow, which builds the package, publishes it to PyPI using Trusted
-Publishing (OIDC, no stored token), and creates a GitHub Release with auto-generated notes.
