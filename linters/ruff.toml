@@ -31,6 +31,13 @@ select = ["ALL"]
 fixable = ["ALL"]
 unfixable = []
 
+# Forcefully enable rules which are not enabled by 'ALL'.
+extend-select = [
+  # Disabled by the Google convention:
+  # https://docs.astral.sh/ruff/settings/#lint_pydocstyle_convention
+  "D213", # Multi-line docstring summary should start at the second line
+]
+
 # Ignore rules.
 ignore = [
   ###########################################
@@ -60,15 +67,15 @@ ignore = [
   ###################################
   "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
   "ASYNC109", # Async function definition with a `timeout` parameter
+  "ASYNC240", # Async functions should not use pathlib.Path methods, use trio.Path or anyio.path
+  "ASYNC250", # Blocking call to `input()` in async context
   "BLE001", # Do not catch blind exception: `Exception`
   "C901", # Method is too complex
   "EM101", # Exception must not use a string literal, assign to variable first
   "EM102", # Exception must not use an f-string literal, assign to variable first
   "ERA001", # Found commented-out code
   "FIX002", # Line contains TODO
-  "ISC003", # Explicitly concatenated string should be implicitly concatenate
   "N818", # Exception name should be named with an Error suffix
-  "PD011", # Use `.to_numpy()` instead of `.values`
   "PLR0911", # Too many return statements
   "PLR0912", # Too many branches
   "PLR0913", # Too many arguments to function call
@@ -83,6 +90,7 @@ ignore = [
   "SIM102", # Use a single `if` statement instead of nested `if` statements
   "SIM103", # Return the condition directly
   "SIM105", # Use `contextlib.suppress()` instead of try-except-pass
+  "SIM108", # Use ternary operator `X` instead of `if`-`else`-block
   "TC001", # Move application import into a type-checking block
   "TC002", # Move third-party import into a type-checking block
   "TC003", # Move standard library import into a type-checking block
