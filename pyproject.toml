@@ -4,7 +4,7 @@ requires = ["hatchling"]
 
 [project]
 name = "shpyx"
-version = "0.0.34"
+version = "0.0.35"
 description = "Run shell commands in Python"
 authors = [{name = "Yossi Rozantsev"}]
 license = {text = "MIT"}
