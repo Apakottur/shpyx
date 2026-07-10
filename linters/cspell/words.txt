@@ -31,3 +31,5 @@ pythonpath
 nonblock
 pathlib
 anyio
+multibyte
+haia
