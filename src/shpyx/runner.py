@@ -12,8 +12,8 @@ import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from src.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
-from src.result import ShellCmdResult
+from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
+from shpyx.result import ShellCmdResult
 
 if TYPE_CHECKING:
     from pathlib import Path

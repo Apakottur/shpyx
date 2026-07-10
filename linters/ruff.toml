@@ -102,7 +102,7 @@ ignore = [
 [lint.isort]
 # Import sorting configuration.
 split-on-trailing-comma = false
-known-first-party = ["src"]
+known-first-party = ["shpyx"]
 combine-as-imports = true
 
 [lint.pydocstyle]
@@ -116,6 +116,10 @@ classmethod-decorators = ["classmethod", "pydantic.field_validator"]
 [lint.flake8-builtins]
 # Ignore list of builtin names.
 builtins-ignorelist = ["id"]
+
+[lint.flake8-tidy-imports]
+# Enforce absolute imports (TID252 only bans parent-relative by default).
+ban-relative-imports = "all"
 
 # Per file ignores.
 [lint.per-file-ignores]

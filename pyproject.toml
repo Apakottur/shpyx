@@ -4,7 +4,7 @@ requires = ["hatchling"]
 
 [project]
 name = "shpyx"
-version = "0.0.35"
+version = "0.0.36"
 description = "Run shell commands in Python"
 authors = [{name = "Yossi Rozantsev"}]
 license = {text = "MIT"}
@@ -33,9 +33,6 @@ dependencies = [
 homepage = "https://github.com/Apakottur/shpyx"
 repository = "https://github.com/Apakottur/shpyx"
 documentation = "https://github.com/Apakottur/shpyx"
-
-[tool.hatch.build.targets.wheel]
-packages = ["shpyx"]
 
 [tool.uv]
 package = true
