@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 import pytest
 import pytest_mock
 
-import src as shpyx
+import shpyx
 
 # Platform OS.
 _SYSTEM = platform.system()
@@ -196,7 +196,7 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
                 p.stderr = None
                 return p
 
-    mocker.patch("src.runner.subprocess.Popen", _popen)
+    mocker.patch("shpyx.runner.subprocess.Popen", _popen)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
