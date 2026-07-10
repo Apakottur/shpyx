@@ -58,6 +58,7 @@ jobs:
         run: pytest --showlocals -c tests/pytest.ini tests
 
   check:
+    name: Check All
     if: always()
     needs: [linters, type-check, unit-tests]
     runs-on: ubuntu-latest
