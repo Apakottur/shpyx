@@ -75,15 +75,11 @@ class Runner:
         self._use_signal_names = use_signal_names
 
     @staticmethod
-    def _log(msg: bytes | str) -> None:
+    def _log(msg: str) -> None:
         """
         Log a message to the standard output.
         """
-        if isinstance(msg, bytes):
-            sys.stdout.buffer.write(msg)
-        else:
-            sys.stdout.write(msg)
-
+        sys.stdout.write(msg)
         sys.stdout.flush()
 
     def _add_stdout(
@@ -104,11 +100,12 @@ class Runner:
         if not data:
             return
 
-        result.stdout += data.decode()
-        result.all_output += data.decode()
+        decoded_data = data.decode()
+        result.stdout += decoded_data
+        result.all_output += decoded_data
 
         if _is_action_required(user=log_output, default=self._log_output):
-            self._log(data)
+            self._log(decoded_data)
 
     def _add_stderr(
         self,
@@ -128,11 +125,12 @@ class Runner:
         if not data:
             return
 
-        result.stderr += data.decode()
-        result.all_output += data.decode()
+        decoded_data = data.decode()
+        result.stderr += decoded_data
+        result.all_output += decoded_data
 
         if _is_action_required(user=log_output, default=self._log_output):
-            self._log(data)
+            self._log(decoded_data)
 
     def _verify_result(
         self,
@@ -201,22 +199,35 @@ class Runner:
         """
         Run a shell command.
 
-        Apart from the command itself, all arguments are optional.
-
         Args:
+            Command:
+            -------
             args: The shell command arguments, can be a string (with the full command) or a list of strings.
+
+            Runner configuration:
+            -------------------
             log_cmd: Whether to log the executed command.
+                     Runner default: `False`.
             log_output: Whether to log the live output of the command (while it is being executed).
+                        Runner default: `False`.
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
+                                Runner default: `True`.
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
+                           Runner default: `False`.
             use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
                                in case of result verification failure.
+                               Runner default: `True`.
+
+            Command execution configuration:
+            ------------------------------
             env: Environment variables to set during the execution of the command (in addition to those of the parent
                  process, which will also be available to the subprocess).
-            exec_dir: Custom path to execute the command in (defaults to current directory).
+            exec_dir: Custom path to execute the command in.
+                      Runner default: `None`, which uses the current directory.
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Runner default: `False`.
 
         Returns:
             The result, as a `ShellCmdResult` object.
