@@ -26,19 +26,17 @@ if _SYSTEM != "Windows":
     import fcntl
 
 
-# A factory that produces a fresh incremental decoder for a single command output stream. A new decoder must be
-# created per stream and per run, since an incremental decoder is stateful (it buffers partial multibyte characters).
-DecoderFactory = Callable[[], codecs.IncrementalDecoder]
+# A callable that returns a fresh incremental decoder for a single command output stream.
+_DecoderFactory = Callable[[], codecs.IncrementalDecoder]
 
 
 def _default_decoder_factory() -> codecs.IncrementalDecoder:
     """
-    The default output decoder factory:
-
-    1. Decodes incrementally, so a valid multibyte character split across two reads (which are not aligned to
-       character boundaries) is held until the next read completes it, rather than raising.
-    2. Uses UTF-8.
-    3. Replaces genuinely invalid bytes (e.g. binary data) with the Unicode replacement character instead of raising.
+    Get the default output decoder factory:
+        1. Decodes incrementally, so a valid multibyte character split across two reads (which are not aligned to
+        character boundaries) is held until the next read completes it, rather than raising.
+        2. Uses UTF-8.
+        3. Replaces genuinely invalid bytes (e.g. binary data) with the Unicode replacement character instead of raising.
     """
     return codecs.getincrementaldecoder("utf-8")(errors="replace")
 
@@ -72,7 +70,7 @@ class Runner:
         verify_return_code: bool = True,
         verify_stderr: bool = False,
         use_signal_names: bool = True,
-        decoder_factory: DecoderFactory = _default_decoder_factory,
+        decoder_factory: _DecoderFactory = _default_decoder_factory,
     ) -> None:
         """
         Create a command runner.
@@ -87,8 +85,7 @@ class Runner:
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
             use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
                                in case of result verification failure.
-            decoder_factory: A zero-argument callable returning a fresh incremental decoder, used to decode the
-                             command output. Defaults to UTF-8 with invalid bytes replaced.
+            decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
         """
         self._log_cmd = log_cmd
         self._log_output = log_output
@@ -109,20 +106,19 @@ class Runner:
         self,
         *,
         result: ShellCmdResult,
-        decoder: codecs.IncrementalDecoder,
         data: bytes | None,
         log_output: bool | None,
-        final: bool = False,
+        decoder: codecs.IncrementalDecoder,
+        final: bool,
     ) -> None:
         """
         Add partial stdout output to the result.
 
         Args:
             result: The result object of the command.
-            decoder: The incremental decoder for this stream, holding any partial multibyte character
-                     from the previous read so it can be completed by the current one.
             data: The partial stdout output to add.
             log_output: Whether to log the output, as supplied to `.run`.
+            decoder: Stream decoder.
             final: Whether this is the last chunk, flushing any trailing incomplete bytes.
         """
         decoded_data = decoder.decode(data or b"", final)
@@ -139,20 +135,19 @@ class Runner:
         self,
         *,
         result: ShellCmdResult,
-        decoder: codecs.IncrementalDecoder,
         data: bytes | None,
         log_output: bool | None,
-        final: bool = False,
+        decoder: codecs.IncrementalDecoder,
+        final: bool,
     ) -> None:
         """
         Add partial stderr output to the result.
 
         Args:
             result: The result object of the command.
-            decoder: The incremental decoder for this stream, holding any partial multibyte character
-                     from the previous read so it can be completed by the current one.
             data: The partial stderr output to add.
             log_output: Whether to log the output, as supplied to `.run`.
+            decoder: Stream decoder.
             final: Whether this is the last chunk, flushing any trailing incomplete bytes.
         """
         decoded_data = decoder.decode(data or b"", final)
@@ -228,7 +223,7 @@ class Runner:
         env: dict[str, str] | None = None,
         exec_dir: Path | str | None = None,
         unix_raw: bool = False,
-        decoder_factory: DecoderFactory | None = None,
+        decoder_factory: _DecoderFactory | None = None,
     ) -> ShellCmdResult:
         """
         Run a shell command.
@@ -332,9 +327,9 @@ class Runner:
         result = ShellCmdResult(cmd=cmd_str)
 
         # Create a fresh decoder per stream (they are stateful and must not be shared).
-        factory = decoder_factory if decoder_factory is not None else self._decoder_factory
-        stdout_decoder = factory()
-        stderr_decoder = factory()
+        decoder_factory = decoder_factory or self._decoder_factory
+        stdout_decoder = decoder_factory()
+        stderr_decoder = decoder_factory()
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
         if _SYSTEM != "Windows":
@@ -356,8 +351,12 @@ class Runner:
             stderr_data = p.stderr.read()
 
             # Add partial outputs to result and log them, if needed.
-            self._add_stdout(result=result, decoder=stdout_decoder, data=stdout_data, log_output=log_output)
-            self._add_stderr(result=result, decoder=stderr_decoder, data=stderr_data, log_output=log_output)
+            self._add_stdout(
+                result=result, decoder=stdout_decoder, data=stdout_data, log_output=log_output, final=False
+            )
+            self._add_stderr(
+                result=result, decoder=stderr_decoder, data=stderr_data, log_output=log_output, final=False
+            )
 
             time.sleep(0.01)
 
