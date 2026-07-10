@@ -2,6 +2,17 @@
 build-backend = "hatchling.build"
 requires = ["hatchling", "hatch-vcs"]
 
+[dependency-groups]
+dev = [
+  "mypy==2.2.0",
+  "pre-commit==4.6.0",
+  "pytest-cov==7.1.0",
+  "pytest-mock==3.15.1",
+  "pytest==9.1.1",
+  "ruff==0.15.21",
+  "ty==0.0.58",
+]
+
 [project]
 name = "shpyx"
 dynamic = ["version"]
@@ -18,15 +29,6 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
-]
-dependencies = [
-  "mypy==2.2.0",
-  "pre-commit==4.6.0",
-  "pytest-cov==7.1.0",
-  "pytest-mock==3.15.1",
-  "pytest==9.1.1",
-  "ruff==0.15.21",
-  "ty==0.0.58",
 ]
 
 [project.urls]
