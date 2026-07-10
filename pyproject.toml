@@ -1,10 +1,10 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 
 [project]
 name = "shpyx"
-version = "0.0.36"
+dynamic = ["version"]
 description = "Run shell commands in Python"
 authors = [{name = "Yossi Rozantsev"}]
 license = {text = "MIT"}
@@ -33,6 +33,9 @@ dependencies = [
 homepage = "https://github.com/Apakottur/shpyx"
 repository = "https://github.com/Apakottur/shpyx"
 documentation = "https://github.com/Apakottur/shpyx"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.uv]
 package = true

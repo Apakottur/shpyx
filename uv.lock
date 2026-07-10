@@ -590,7 +590,6 @@ wheels = [
 
 [[package]]
 name = "shpyx"
-version = "0.0.36"
 source = { editable = "." }
 dependencies = [
     { name = "mypy" },
