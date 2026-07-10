@@ -33,3 +33,4 @@ pathlib
 anyio
 multibyte
 haia
+softprops

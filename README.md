@@ -178,38 +178,41 @@ Other 3rd-party libraries for running shell commands in Python:
 
 To contribute simply open a PR with your changes.
 
-Tests, linters and type checks are run in CI through GitHub Actions.
+All checks (Linters, type checks and tests) automatically run in CI through GitHub Actions.
 
 ### Running checks locally
 
-To run checks locally, start by installing all the development dependencies:
+Local development is done with [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
+Start by installing all the development dependencies:
 ```shell
 uv sync
 ```
 
 To run the linters use `pre-commit`:
-
 ```shell
 pre-commit run -a
 ```
 
 To run the unit tests use `pytest`:
-
 ```shell
 pytest -c tests/pytest.ini tests
 ```
 
-To run type checks use `mypy`:
-
+To run type checks use `mypy` or `ty` (both are run in CI):
 ```shell
 mypy --config-file linters/mypy.toml src tests
-```
-
-and `ty`:
-
-```shell
 ty check --config-file linters/ty.toml src tests
 ```
 
-To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.
+### Releasing
+
+The package version is derived from the git tag (via `hatch-vcs`), so there is nothing to bump in
+`pyproject.toml`. To release a new version, push a `v`-prefixed tag from `main`:
+```shell
+git tag v0.0.37
+git push origin v0.0.37
+```
+
+This triggers the `Release` workflow, which builds the package, publishes it to PyPI using Trusted
+Publishing (OIDC, no stored token), and creates a GitHub Release with auto-generated notes.
