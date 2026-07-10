@@ -29,16 +29,15 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
     """
-    match user:
-        case True:
-            # The user explicitly set the value to `True`.
-            return True
-        case False:
-            # The user explicitly set the value to `False`.
-            return False
-        case None:
-            # The user did not provide a value for the action, use the default.
-            return default
+    if user is True:
+        # The user explicitly set the value to `True`.
+        return True
+    elif user is False:
+        # The user explicitly set the value to `False`.
+        return False
+    else:
+        # The user did not provide a value for the action, use the default.
+        return default
 
 
 class Runner:
@@ -274,11 +273,11 @@ class Runner:
                 cwd=exec_dir,
             )
         except Exception as e:
-            raise ShpyxInternalError("Failed to initialize subprocess") from e
+            raise ShpyxInternalError("Failed to initialize subprocess.") from e
 
         # Verify that all the pipes were properly configured.
-        if not (p.stdout and p.stderr):
-            raise ShpyxInternalError("Failed to initialize subprocess")
+        if not (p.stdout and p.stderr):  # pragma: no cover
+            raise ShpyxInternalError("Failed to initialize subprocess.")
 
         # Initialize the result object.
         result = ShellCmdResult(cmd=cmd_str)
