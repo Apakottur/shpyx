@@ -9,7 +9,6 @@ import httpx
 
 import shpyx
 
-_PYPI_URL = "https://pypi.org/pypi/shpyx/json"
 _MAIN_BRANCH = "main"
 
 
@@ -36,8 +35,16 @@ def main() -> None:
     print("Fetching from origin...")
     shpyx.run("git pull", log_output=True)
 
+    # Derive the GitHub "owner/repo" slug (and PyPI package name) from the origin remote,
+    # supporting both SSH (git@github.com:owner/repo.git) and HTTPS URLs.
+    remote_url = shpyx.run("git remote get-url origin").stdout.strip()
+    slug = remote_url.removesuffix(".git").split("github.com")[-1].strip(":/")
+    if slug.count("/") != 1:
+        _abort(f"Cannot parse a GitHub 'owner/repo' slug from origin URL {remote_url!r}.")
+    package_name = slug.split("/")[1]
+
     # Look up the latest published version on PyPI.
-    pypi_response = httpx.get(_PYPI_URL)
+    pypi_response = httpx.get(f"https://pypi.org/pypi/{package_name}/json")
     pypi_response.raise_for_status()
     version = pypi_response.json()["info"]["version"]
     parts = version.split(".")
@@ -76,7 +83,7 @@ def main() -> None:
 
     # Print the release URL.
     print(f"\n✅ Pushed {tag}. The Release workflow is now running:")
-    print("   https://github.com/Apakottur/shpyx/actions/workflows/release.yml")
+    print(f"   https://github.com/{slug}/actions/workflows/release.yml")
 
 
 if __name__ == "__main__":
