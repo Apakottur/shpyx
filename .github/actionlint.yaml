@@ -1,0 +1,7 @@
+# Path-specific configurations.
+paths:
+  # Composite actions are not supported.
+  # https://github.com/rhysd/actionlint/issues/401
+  .github/workflows/util/*/action.yml:
+    ignore:
+      - '.*'

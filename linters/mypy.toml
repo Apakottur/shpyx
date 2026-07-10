@@ -4,6 +4,8 @@
 ####################
 # Import discovery #
 ####################
+mypy_path = "$MYPY_CONFIG_FILE_DIR/../linters/stubs"
+
 # Suppresses error messages about imports that cannot be resolved.
 # This can be enabled per-module.
 ignore_missing_imports = false
@@ -53,8 +55,8 @@ ignore_errors = false
 # Miscellaneous strictness flags #
 ##################################
 allow_untyped_globals = false
-allow_redefinition = false
-local_partial_types = false
+allow_redefinition = true
+local_partial_types = true
 # disable_error_code=
 # Optional error codes: https://mypy.readthedocs.io/en/stable/error_code_list2.html
 enable_error_code = [
@@ -65,17 +67,22 @@ enable_error_code = [
   "truthy-iterable",
   "ignore-without-code",
   "unused-awaitable",
-  "explicit-override",
+  # "explicit-override",
+  "mutable-override",
+  "exhaustive-match",
 ]
+extra_checks = false
 implicit_reexport = false
-strict_concatenate = true
 strict_equality = true
+strict_equality_for_none = true
+strict_bytes = true
 strict = true
 ##############################
 # Configuring error messages #
 ##############################
 show_error_context = false
 show_column_numbers = true
+show_error_code_links = false
 hide_error_codes = false
 # pretty=
 color_output = true
@@ -88,6 +95,7 @@ incremental = true
 ####################
 # Advanced options #
 ####################
+plugins = []
 warn_incomplete_stub = true
 #####################
 # Report generation #

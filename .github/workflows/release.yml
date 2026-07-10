@@ -13,22 +13,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: ./.github/workflows/util/setup_python
 
-      - name: Install dependencies
+      - name: Determine version
+        id: version
+        run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Check if version is already released
+        id: check
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          pip install poetry
+          code=$(curl -fsS -o /dev/null -w "%{http_code}" \
+            "https://pypi.org/pypi/shpyx/${VERSION}/json" || true)
+          if [ "$code" = "200" ]; then
+            echo "shpyx ${VERSION} is already on PyPI, skipping release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "shpyx ${VERSION} is new, releasing."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build
-        run: |
-          poetry build
+        if: steps.check.outputs.publish == 'true'
+        run: uv build
 
       - name: Publish
+        if: steps.check.outputs.publish == 'true'
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry publish --username __token__
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish

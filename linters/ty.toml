@@ -1,0 +1,35 @@
+# See: https://docs.astral.sh/ty/reference/configuration
+
+
+[rules]
+# All rules are errors by default.
+all = "error"
+
+# Disable specific rules.
+unsupported-dynamic-base = "ignore"
+missing-override-decorator = "ignore"
+
+[analysis]
+allowed-unresolved-imports = []
+replace-imports-with-any = []
+respect-type-ignore-comments = true
+
+[environment]
+extra-paths = []
+# python =
+# python-platform
+python-version = "3.14"
+# root = []
+# typeshed =
+
+# [[overrides]]
+
+[src]
+# exclude =
+# include =
+respect-ignore-files = true
+
+[terminal]
+error-on-warning = true
+# output-format = "full"
+output-format = "concise"

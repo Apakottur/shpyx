@@ -1,0 +1,35 @@
+name: Setup Python
+description: Install Python, uv and dependencies.
+
+inputs:
+  python-version:
+    description: Python version to install.
+    default: "3.14"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v8.3.2
+      with:
+        python-version: ${{ inputs.python-version }}
+        enable-cache: true
+
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+          uv sync --frozen
+
+    # Put the project virtual environment on PATH for subsequent steps, so tools can be
+    # invoked directly (e.g. `pytest`). Uses $GITHUB_PATH, which is applied
+    # regardless of the step's shell and works on all runners.
+    - name: Activate Python venv
+      shell: bash
+      run: |
+        if [ -d .venv/Scripts ]; then
+          # Windows layout ('.venv/Scripts'); '$(pwd -W)' yields a Windows-style path.
+          echo "$(pwd -W)/.venv/Scripts" >> "$GITHUB_PATH"
+        else
+          # Unix layout ('.venv/bin').
+          echo "$(pwd)/.venv/bin" >> "$GITHUB_PATH"
+        fi
