@@ -318,7 +318,6 @@ def test_unix_raw_enabled() -> None:
 def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:
     """
     Decoding must gracefully handle two separate hazards in a single run:
-
       1. A valid multibyte UTF-8 character split across two output stream reads.
       2. A genuinely invalid UTF-8 byte in the output (e.g. binary/Latin-1 data).
     """
@@ -331,10 +330,12 @@ def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:
 
 
 def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> None:
-    """A custom decoder factory supplied to `run` overrides the default decoding."""
+    """
+    Test the `decoder_factory` argument.
+    """
 
     class _AppendADecoder(codecs.IncrementalDecoder):
-        """A deliberately silly decoder: emit each byte as a character followed by an 'a'."""
+        # Custom decoder adding 'a' to each byte.
 
         @override
         def decode(self, input: Buffer, final: bool = False) -> str:
