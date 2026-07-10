@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
+from typing import Any
 
 import pytest
 import pytest_mock
@@ -174,7 +175,7 @@ class _SubprocessPopenIssue(Enum):
 def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue: _SubprocessPopenIssue) -> None:
     orig = subprocess.Popen
 
-    def _popen(*args: str, **kwargs: str) -> None:
+    def _popen(*args: Any, **kwargs: Any) -> Any:
         match issue:
             case _SubprocessPopenIssue.CRASH:
                 raise OSError("Some SO error")
