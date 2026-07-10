@@ -29,20 +29,21 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
     """
-    if user is True:
-        # The user explicitly set the value to `True`.
-        return True
-    elif user is False:
-        # The user explicitly set the value to `False`.
-        return False
-    else:
-        # The user did not provide a value for the action, use the default.
-        return default
+    match user:
+        case True:
+            # The user explicitly set the value to `True`.
+            return True
+        case False:
+            # The user explicitly set the value to `False`.
+            return False
+        case None:
+            # The user did not provide a value for the action, use the default.
+            return default
 
 
 class Runner:
     """
-    An instance of a shell command runner, used to run shell commands based on a specific configuration.
+    An instance of a shell command runner, used to run shell commands with a specific runner configuration.
     """
 
     def __init__(
@@ -187,20 +188,21 @@ class Runner:
         self,
         args: str | list[str],
         *,
+        # Runner configuration.
         log_cmd: bool | None = None,
         log_output: bool | None = None,
         verify_return_code: bool | None = None,
         verify_stderr: bool | None = None,
         use_signal_names: bool | None = None,
+        # Command execution configuration.
         env: dict[str, str] | None = None,
         exec_dir: Path | str | None = None,
-        unix_raw: bool | None = False,
+        unix_raw: bool = False,
     ) -> ShellCmdResult:
         """
         Run a shell command.
 
         Apart from the command itself, all arguments are optional.
-        The default values of the arguments can be found in `ShellCmdRunnerConfig`.
 
         Args:
             args: The shell command arguments, can be a string (with the full command) or a list of strings.
@@ -271,12 +273,12 @@ class Runner:
                 env=cmd_env,
                 cwd=exec_dir,
             )
-        except Exception:
-            p = None
+        except Exception as e:
+            raise ShpyxInternalError("Failed to initialize subprocess") from e
 
         # Verify that all the pipes were properly configured.
-        if not (p and p.stdout and p.stderr):
-            raise ShpyxInternalError("Failed to initialize subprocess.")
+        if not (p.stdout and p.stderr):
+            raise ShpyxInternalError("Failed to initialize subprocess")
 
         # Initialize the result object.
         result = ShellCmdResult(cmd=cmd_str)
