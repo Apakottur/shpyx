@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Buffer
+    from _typeshed import ReadableBuffer
 
 import pytest
 import pytest_mock
@@ -376,7 +376,7 @@ def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> No
     class _AppendADecoder(codecs.IncrementalDecoder):
         """A deliberately silly decoder: emit each byte as a character followed by an 'a'."""
 
-        def decode(self, input: Buffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
+        def decode(self, input: ReadableBuffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
             return "".join(f"{byte:c}a" for byte in bytes(input))
 
     # 'hi' -> 'h','a','i','a'
