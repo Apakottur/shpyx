@@ -257,8 +257,8 @@ class Runner:
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
                       Runner default: `False`.
-            decoder_factory: A zero-argument callable returning a fresh incremental decoder, used to decode the
-                             command output. Overrides the runner default when provided.
+            decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
+                             Runner default: `None`, which uses the default decoder factory.
 
         Returns:
             The result, as a `ShellCmdResult` object.
