@@ -11,12 +11,12 @@ import subprocess
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, override
+from typing import TYPE_CHECKING, Any
 
 from tests.fake_proc import patch_fake_proc
 
 if TYPE_CHECKING:
-    from collections.abc import Buffer
+    from _typeshed import ReadableBuffer
 
 import pytest
 import pytest_mock
@@ -337,8 +337,7 @@ def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> No
     class _AppendADecoder(codecs.IncrementalDecoder):
         # Custom decoder adding 'a' to each byte.
 
-        @override
-        def decode(self, input: Buffer, final: bool = False) -> str:
+        def decode(self, input: ReadableBuffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
             return "".join(f"{byte:c}a" for byte in bytes(input))
 
     # 'hi' -> 'h','a','i','a'
