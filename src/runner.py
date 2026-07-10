@@ -27,13 +27,13 @@ if _SYSTEM != "Windows":
 
 
 # A factory that produces a fresh incremental decoder for a single command output stream. A new decoder must be
-# created per stream and per run, as an incremental decoder is stateful (it buffers partial multibyte characters).
+# created per stream and per run, since an incremental decoder is stateful (it buffers partial multibyte characters).
 DecoderFactory = Callable[[], codecs.IncrementalDecoder]
 
 
 def _default_decoder_factory() -> codecs.IncrementalDecoder:
     """
-    The default output decoder:
+    The default output decoder factory:
 
     1. Decodes incrementally, so a valid multibyte character split across two reads (which are not aligned to
        character boundaries) is held until the next read completes it, rather than raising.
