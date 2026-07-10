@@ -4,7 +4,9 @@ Test the default runner, `shpyx.run`.
 
 import platform
 import signal
+import subprocess
 import tempfile
+from enum import Enum, auto
 from pathlib import Path
 
 import pytest
@@ -162,16 +164,41 @@ def test_exec_dir() -> None:
         _verify_result(result, return_code=0, stdout="avocado", stderr="")
 
 
-def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture) -> None:
-    def _popen(*_args: str, **_kwargs: str) -> None:
-        raise OSError("Some SO error")
+class _SubprocessPopenIssue(Enum):
+    CRASH = auto()
+    STDOUT_PIPE_MISSING = auto()
+    STDERR_PIPE_MISSING = auto()
+
+
+@pytest.mark.parametrize("issue", _SubprocessPopenIssue)
+def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue: _SubprocessPopenIssue) -> None:
+    orig = subprocess.Popen
+
+    def _popen(*args: str, **kwargs: str) -> None:
+        match issue:
+            case _SubprocessPopenIssue.CRASH:
+                raise OSError("Some SO error")
+            case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
+                p = orig(*args, **kwargs)
+                p.stdout = None
+                return p
+            case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
+                p = orig(*args, **kwargs)
+                p.stderr = None
+                return p
 
     mocker.patch("src.runner.subprocess.Popen", _popen)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
 
-    assert str(exc.value) == "Failed to initialize subprocess."
+    match issue:
+        case _SubprocessPopenIssue.CRASH:
+            assert str(exc.value) == "Failed to initialize subprocess (subprocess.Popen)"
+        case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
+            assert str(exc.value) == "Failed to initialize subprocess (stdout pipe)"
+        case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
+            assert str(exc.value) == "Failed to initialize subprocess (stderr pipe)"
 
 
 def test_signal_names_enabled() -> None:

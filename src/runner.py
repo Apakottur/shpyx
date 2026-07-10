@@ -273,11 +273,13 @@ class Runner:
                 cwd=exec_dir,
             )
         except Exception as e:
-            raise ShpyxInternalError("Failed to initialize subprocess.") from e
+            raise ShpyxInternalError("Failed to initialize subprocess (subprocess.Popen)") from e
 
         # Verify that all the pipes were properly configured.
-        if not (p.stdout and p.stderr):  # pragma: no cover
-            raise ShpyxInternalError("Failed to initialize subprocess.")
+        if not p.stdout:
+            raise ShpyxInternalError("Failed to initialize subprocess (stdout pipe)")
+        if not p.stderr:
+            raise ShpyxInternalError("Failed to initialize subprocess (stderr pipe)")
 
         # Initialize the result object.
         result = ShellCmdResult(cmd=cmd_str)
