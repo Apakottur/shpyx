@@ -2,13 +2,19 @@
 Test the default runner, `shpyx.run`.
 """
 
+from __future__ import annotations
+
+import codecs
 import platform
 import signal
 import subprocess
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Buffer
 
 import pytest
 import pytest_mock
@@ -305,3 +311,76 @@ def test_unix_raw_enabled() -> None:
     )
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
+
+
+class _FakeStream:
+    """A stdout/stderr stand-in that hands out queued byte chunks one read at a time."""
+
+    def __init__(self, chunks: list[bytes]) -> None:
+        self.chunks = list(chunks)
+
+    def read(self) -> bytes:
+        return self.chunks.pop(0) if self.chunks else b""
+
+    def fileno(self) -> int:
+        return 0
+
+    def close(self) -> None:
+        pass
+
+
+class _FakeProc:
+    """A `subprocess.Popen` stand-in that emits controlled output chunks through the read loop."""
+
+    def __init__(self, stdout_chunks: list[bytes], stderr_chunks: list[bytes]) -> None:
+        self.stdout = _FakeStream(stdout_chunks)
+        self.stderr = _FakeStream(stderr_chunks)
+        self.returncode = 0
+
+    def poll(self) -> int | None:
+        # Keep the read loop going while either stream still has queued chunks.
+        return None if (self.stdout.chunks or self.stderr.chunks) else 0
+
+    def communicate(self) -> tuple[bytes, bytes]:
+        return b"", b""
+
+
+def _patch_fake_proc(
+    mocker: pytest_mock.MockerFixture,
+    *,
+    stdout_chunks: list[bytes],
+    stderr_chunks: list[bytes] | None = None,
+) -> None:
+    proc = _FakeProc(stdout_chunks, stderr_chunks or [])
+    mocker.patch("src.runner.subprocess.Popen", return_value=proc)
+
+
+def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:
+    """
+    Decoding must gracefully handle two separate hazards in a single run:
+
+      1. A valid multibyte UTF-8 character split across two output stream reads.
+      2. A genuinely invalid UTF-8 byte in the output (e.g. binary/Latin-1 data).
+    """
+    # '€' is b"\xe2\x82\xac". Split it across two reads, then feed a lone invalid byte (b"\xff").
+    _patch_fake_proc(mocker, stdout_chunks=[b"\xe2\x82", b"\xac", b"\xff"])
+
+    result = shpyx.run("dummy_cmd")
+    assert result.stdout == "€�"
+    assert result.stderr == ""
+
+
+def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> None:
+    """A custom decoder factory supplied to `run` overrides the default decoding."""
+
+    class _AppendADecoder(codecs.IncrementalDecoder):
+        """A deliberately silly decoder: emit each byte as a character followed by an 'a'."""
+
+        def decode(self, input: Buffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
+            return "".join(f"{byte:c}a" for byte in bytes(input))
+
+    # 'hi' -> 'h','a','i','a'
+    _patch_fake_proc(mocker, stdout_chunks=[b"hi"])
+
+    result = shpyx.run("dummy_cmd", decoder_factory=_AppendADecoder)
+    assert result.stdout == "haia"  # cspell:ignore haia

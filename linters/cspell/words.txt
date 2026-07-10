@@ -31,3 +31,4 @@ pythonpath
 nonblock
 pathlib
 anyio
+multibyte

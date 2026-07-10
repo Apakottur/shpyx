@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import codecs
 import os
 import platform
 import shlex
@@ -8,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from src.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
@@ -22,6 +24,23 @@ _SYSTEM = platform.system()
 
 if _SYSTEM != "Windows":
     import fcntl
+
+
+# A factory that produces a fresh incremental decoder for a single command output stream. A new decoder must be
+# created per stream and per run, as an incremental decoder is stateful (it buffers partial multibyte characters).
+DecoderFactory = Callable[[], codecs.IncrementalDecoder]
+
+
+def _default_decoder_factory() -> codecs.IncrementalDecoder:
+    """
+    The default output decoder:
+
+    1. Decodes incrementally, so a valid multibyte character split across two reads (which are not aligned to
+       character boundaries) is held until the next read completes it, rather than raising.
+    2. Uses UTF-8.
+    3. Replaces genuinely invalid bytes (e.g. binary data) with the Unicode replacement character instead of raising.
+    """
+    return codecs.getincrementaldecoder("utf-8")(errors="replace")
 
 
 def _is_action_required(*, user: bool | None, default: bool) -> bool:
@@ -53,6 +72,7 @@ class Runner:
         verify_return_code: bool = True,
         verify_stderr: bool = False,
         use_signal_names: bool = True,
+        decoder_factory: DecoderFactory = _default_decoder_factory,
     ) -> None:
         """
         Create a command runner.
@@ -67,12 +87,15 @@ class Runner:
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
             use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
                                in case of result verification failure.
+            decoder_factory: A zero-argument callable returning a fresh incremental decoder, used to decode the
+                             command output. Defaults to UTF-8 with invalid bytes replaced.
         """
         self._log_cmd = log_cmd
         self._log_output = log_output
         self._verify_return_code = verify_return_code
         self._verify_stderr = verify_stderr
         self._use_signal_names = use_signal_names
+        self._decoder_factory = decoder_factory
 
     @staticmethod
     def _log(msg: str) -> None:
@@ -86,21 +109,26 @@ class Runner:
         self,
         *,
         result: ShellCmdResult,
+        decoder: codecs.IncrementalDecoder,
         data: bytes | None,
         log_output: bool | None,
+        final: bool = False,
     ) -> None:
         """
         Add partial stdout output to the result.
 
         Args:
             result: The result object of the command.
+            decoder: The incremental decoder for this stream, holding any partial multibyte character
+                     from the previous read so it can be completed by the current one.
             data: The partial stdout output to add.
             log_output: Whether to log the output, as supplied to `.run`.
+            final: Whether this is the last chunk, flushing any trailing incomplete bytes.
         """
-        if not data:
+        decoded_data = decoder.decode(data or b"", final)
+        if not decoded_data:
             return
 
-        decoded_data = data.decode()
         result.stdout += decoded_data
         result.all_output += decoded_data
 
@@ -111,21 +139,26 @@ class Runner:
         self,
         *,
         result: ShellCmdResult,
+        decoder: codecs.IncrementalDecoder,
         data: bytes | None,
         log_output: bool | None,
+        final: bool = False,
     ) -> None:
         """
         Add partial stderr output to the result.
 
         Args:
             result: The result object of the command.
+            decoder: The incremental decoder for this stream, holding any partial multibyte character
+                     from the previous read so it can be completed by the current one.
             data: The partial stderr output to add.
             log_output: Whether to log the output, as supplied to `.run`.
+            final: Whether this is the last chunk, flushing any trailing incomplete bytes.
         """
-        if not data:
+        decoded_data = decoder.decode(data or b"", final)
+        if not decoded_data:
             return
 
-        decoded_data = data.decode()
         result.stderr += decoded_data
         result.all_output += decoded_data
 
@@ -195,6 +228,7 @@ class Runner:
         env: dict[str, str] | None = None,
         exec_dir: Path | str | None = None,
         unix_raw: bool = False,
+        decoder_factory: DecoderFactory | None = None,
     ) -> ShellCmdResult:
         """
         Run a shell command.
@@ -228,6 +262,8 @@ class Runner:
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
                       Runner default: `False`.
+            decoder_factory: A zero-argument callable returning a fresh incremental decoder, used to decode the
+                             command output. Overrides the runner default when provided.
 
         Returns:
             The result, as a `ShellCmdResult` object.
@@ -295,6 +331,11 @@ class Runner:
         # Initialize the result object.
         result = ShellCmdResult(cmd=cmd_str)
 
+        # Create a fresh decoder per stream (they are stateful and must not be shared).
+        factory = decoder_factory if decoder_factory is not None else self._decoder_factory
+        stdout_decoder = factory()
+        stderr_decoder = factory()
+
         # Make all the command outputs non-blocking, so that it can be interrupted.
         if _SYSTEM != "Windows":
             fcntl.fcntl(
@@ -315,15 +356,15 @@ class Runner:
             stderr_data = p.stderr.read()
 
             # Add partial outputs to result and log them, if needed.
-            self._add_stdout(result=result, data=stdout_data, log_output=log_output)
-            self._add_stderr(result=result, data=stderr_data, log_output=log_output)
+            self._add_stdout(result=result, decoder=stdout_decoder, data=stdout_data, log_output=log_output)
+            self._add_stderr(result=result, decoder=stderr_decoder, data=stderr_data, log_output=log_output)
 
             time.sleep(0.01)
 
-        # Get the remaining outputs and add them to the result.
+        # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
         final_stdout, final_stderr = p.communicate()
-        self._add_stdout(result=result, data=final_stdout, log_output=log_output)
-        self._add_stderr(result=result, data=final_stderr, log_output=log_output)
+        self._add_stdout(result=result, decoder=stdout_decoder, data=final_stdout, log_output=log_output, final=True)
+        self._add_stderr(result=result, decoder=stderr_decoder, data=final_stderr, log_output=log_output, final=True)
 
         # Cleanup.
         p.stdout.close()
