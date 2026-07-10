@@ -42,7 +42,7 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
 
 class Runner:
     """
-    An instance of a shell command runner, used to run shell commands based on a specific configuration.
+    An instance of a shell command runner, used to run shell commands with a specific runner configuration.
     """
 
     def __init__(
@@ -187,20 +187,21 @@ class Runner:
         self,
         args: str | list[str],
         *,
+        # Runner configuration.
         log_cmd: bool | None = None,
         log_output: bool | None = None,
         verify_return_code: bool | None = None,
         verify_stderr: bool | None = None,
         use_signal_names: bool | None = None,
+        # Command execution configuration.
         env: dict[str, str] | None = None,
         exec_dir: Path | str | None = None,
-        unix_raw: bool | None = False,
+        unix_raw: bool = False,
     ) -> ShellCmdResult:
         """
         Run a shell command.
 
         Apart from the command itself, all arguments are optional.
-        The default values of the arguments can be found in `ShellCmdRunnerConfig`.
 
         Args:
             args: The shell command arguments, can be a string (with the full command) or a list of strings.
@@ -271,12 +272,14 @@ class Runner:
                 env=cmd_env,
                 cwd=exec_dir,
             )
-        except Exception:
-            p = None
+        except Exception as e:
+            raise ShpyxInternalError("Failed to initialize subprocess (subprocess.Popen)") from e
 
         # Verify that all the pipes were properly configured.
-        if not (p and p.stdout and p.stderr):
-            raise ShpyxInternalError("Failed to initialize subprocess.")
+        if not p.stdout:
+            raise ShpyxInternalError("Failed to initialize subprocess (stdout pipe)")
+        if not p.stderr:
+            raise ShpyxInternalError("Failed to initialize subprocess (stderr pipe)")
 
         # Initialize the result object.
         result = ShellCmdResult(cmd=cmd_str)

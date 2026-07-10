@@ -44,7 +44,7 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 In list format:
 
 ```python
->>> shpyx.run(["echo", ["1"])
+>>> shpyx.run(["echo", "1"])
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
@@ -97,7 +97,7 @@ colors. For example, the `psql` command is used to start an interactive shell ag
 shpyx.run(f"psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
 ```
 
-However, the above call will not work as good as running `psql` directly, due to terminal control sequences not being
+However, the above call will not work as well as running `psql` directly, due to terminal control sequences not being
 properly propagated. To make it work well, we need to use the [script](https://man7.org/linux/man-pages/man1/script.1.html)
 utility which will properly propagate all control sequences:
 
@@ -105,7 +105,7 @@ utility which will properly propagate all control sequences:
 # Linux:
 shpyx.run(f"script -q -c 'psql -h {host} -p {port} -U {user} -d {database}'", log_output=True)
 # MacOS:
-shpyx.run(f"script -q psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
+shpyx.run(f"script -q /dev/null psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
 
 ```
 
@@ -185,7 +185,7 @@ Tests, linters and type checks are run in CI through GitHub Actions.
 To run checks locally, start by installing all the development dependencies:
 
 ```shell
-poetry install
+uv sync
 ```
 
 To run the linters use `pre-commit`:
@@ -203,7 +203,13 @@ pytest -c tests/pytest.ini tests
 To run type checks use `mypy`:
 
 ```shell
-mypy --config-file shpyx/mypy.toml shpyx tests
+mypy --config-file linters/mypy.toml src tests
+```
+
+and `ty`:
+
+```shell
+ty check --config-file linters/ty.toml src tests
 ```
 
 To trigger a deployment of a new version upon merge, bump the version number in `pyproject.toml`.
