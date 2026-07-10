@@ -37,7 +37,7 @@ def patch_fake_proc(
     mocker: pytest_mock.MockerFixture,
     *,
     stdout_chunks: list[bytes],
-    stderr_chunks: list[bytes] | None = None,
+    stderr_chunks: list[bytes],
 ) -> None:
     proc = _FakeProc(stdout_chunks, stderr_chunks or [])
     mocker.patch("src.runner.subprocess.Popen", return_value=proc)

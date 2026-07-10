@@ -323,7 +323,7 @@ def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:
       2. A genuinely invalid UTF-8 byte in the output (e.g. binary/Latin-1 data).
     """
     # '€' is b"\xe2\x82\xac". Split it across two reads, then feed a lone invalid byte (b"\xff").
-    patch_fake_proc(mocker, stdout_chunks=[b"\xe2\x82", b"\xac", b"\xff"])
+    patch_fake_proc(mocker, stdout_chunks=[b"\xe2\x82", b"\xac", b"\xff"], stderr_chunks=[])
 
     result = shpyx.run("dummy_cmd")
     assert result.stdout == "€�"
@@ -341,7 +341,7 @@ def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> No
             return "".join(f"{byte:c}a" for byte in bytes(input))
 
     # 'hi' -> 'h','a','i','a'
-    patch_fake_proc(mocker, stdout_chunks=[b"hi"])
+    patch_fake_proc(mocker, stdout_chunks=[b"hi"], stderr_chunks=[])
 
     result = shpyx.run("dummy_cmd", decoder_factory=_AppendADecoder)
     assert result.stdout == "haia"
