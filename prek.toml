@@ -1,0 +1,101 @@
+default_language_version = { python = "python3.14" }
+
+###########
+# GENERAL #
+###########
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+
+[[repos.hooks]]
+id = "check-yaml"
+args = ["--unsafe"]
+
+[[repos.hooks]]
+id = "check-toml"
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+
+[[repos.hooks]]
+id = "check-added-large-files"
+
+[[repos]]
+repo = "https://github.com/streetsidesoftware/cspell-cli"
+rev = "v10.2.0"
+
+[[repos.hooks]]
+id = "cspell"
+exclude = '\.(csv|json|txt|lock)$'
+args = [
+  "lint",
+  "-c",
+  "./linters/cspell.json",
+  "--no-progress",
+  "--cache",
+  "--cache-location",
+  "./linters/.cspellcache",
+]
+
+##################
+# GITHUB ACTIONS #
+##################
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.12"
+
+[[repos.hooks]]
+id = "actionlint"
+
+########
+# TOML #
+########
+[[repos]]
+repo = "https://github.com/pappasam/toml-sort"
+rev = "v0.25.0"
+
+[[repos.hooks]]
+id = "toml-sort"
+files = "pyproject.toml"
+args = ["--in-place", "--ignore-case", "--trailing-comma-inline-array"]
+
+[[repos]]
+repo = "https://github.com/ComPWA/taplo-pre-commit"
+rev = "v0.9.3"
+
+[[repos.hooks]]
+id = "taplo-format"
+args = ["--config", "./linters/taplo.toml"]
+
+[[repos.hooks]]
+id = "taplo-lint"
+args = ["--config", "./linters/taplo.toml"]
+
+########
+# YAML #
+########
+[[repos]]
+repo = "https://github.com/adrienverge/yamllint.git"
+rev = "v1.38.0"
+
+[[repos.hooks]]
+id = "yamllint"
+args = ["--config-file", "./linters/yamllint.yaml"]
+
+##########
+# PYTHON #
+##########
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.16.8"
+
+[[repos.hooks]]
+id = "ruff-check"
+args = ["--config", "./linters/ruff.toml"]
+
+[[repos.hooks]]
+id = "ruff-format"
+args = ["--config", "./linters/ruff.toml"]

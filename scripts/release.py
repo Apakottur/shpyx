@@ -66,6 +66,17 @@ def main() -> None:
         print("Invalid choice, please enter 1, 2 or 3.")
     tag = f"v{bumps[choice][1]}"
 
+    # Preview the release notes that the workflow will publish. This calls the same
+    # GitHub endpoint that `generate_release_notes: true` uses in release.yml, so the
+    # output matches what the Release workflow produces (assuming no new merges land
+    # before the tag is pushed). A failure here aborts before tagging, since it likely
+    # means the release notes the workflow produces would be wrong too.
+    print("\nGenerating release notes preview...")
+    notes = shpyx.run(
+        f"gh api repos/{slug}/releases/generate-notes -f tag_name={tag} -f target_commitish={_MAIN_BRANCH} --jq .body",
+    )
+    print(f"\n{'-' * 72}\n{notes.stdout.strip()}\n{'-' * 72}")
+
     # Handle a pre-existing tag (e.g. from a release run that failed after tagging).
     local = shpyx.run(f"git tag --list {tag}").stdout.strip()
     remote = shpyx.run(f"git ls-remote --tags origin {tag}").stdout.strip()

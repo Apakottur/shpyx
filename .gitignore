@@ -3,6 +3,7 @@
 venv
 .venv
 .vscode
+.claude
 
 # Python
 __pycache__

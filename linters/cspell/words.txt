@@ -35,3 +35,6 @@ multibyte
 haia
 softprops
 httpx
+prek
+maxfail
+commitish
