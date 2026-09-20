@@ -5,8 +5,8 @@
 # Maximum line length.
 line-length = 120
 
-# Python version.
-target-version = "py314"
+# Minimum supported Python version.
+target-version = "py311"
 
 # Enable autofixing.
 fix = true
@@ -46,6 +46,7 @@ ignore = [
   "COM812", # Trailing comma missing
   "E501", # Line too long
   "ISC001", # Implicitly concatenated strings on a single line
+  "ISC004", # Unparenthesized implicit string concatenation in collection
   ##############
   # Pydocstyle #
   ##############
@@ -71,6 +72,7 @@ ignore = [
   "ASYNC250", # Blocking call to `input()` in async context
   "BLE001", # Do not catch blind exception: `Exception`
   "C901", # Method is too complex
+  "CPY001", # Missing copyright notice at top of file
   "EM101", # Exception must not use a string literal, assign to variable first
   "EM102", # Exception must not use an f-string literal, assign to variable first
   "ERA001", # Found commented-out code
@@ -80,6 +82,7 @@ ignore = [
   "PLR0912", # Too many branches
   "PLR0913", # Too many arguments to function call
   "PLR0915", # Too many statements
+  "PLR0917", # Too many positional arguments
   "PLR1722", # Use `sys.exit()` instead of `exit`
   "PLR2004", # Magic value used in comparison, consider replacing with a constant variable
   "PLR5501", # Consider using `elif` instead of `else` then `if` to remove one indentation level

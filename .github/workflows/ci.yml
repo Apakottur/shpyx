@@ -16,13 +16,19 @@ jobs:
       - name: Setup Python
         uses: ./.github/workflows/util/setup_python
 
-      - name: Run pre-commit
-        run: pre-commit run -v --show-diff-on-failure --color=always --all-files
+      - name: prek cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/prek
+          key: ci-prek-cache-${{ hashFiles('prek.toml') }}
+
+      - name: Run prek
+        run: prek run -v --show-diff-on-failure --color=always --all-files
 
   type-check:
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     name: Type Checks - Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -41,8 +47,9 @@ jobs:
 
   unit-tests:
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     name: Unit Tests - ${{ matrix.os }} - Python ${{ matrix.python-version }}
@@ -64,6 +71,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@v1.2.2
+        uses: re-actors/alls-green@v1.3.0
         with:
           jobs: ${{ toJSON(needs) }}

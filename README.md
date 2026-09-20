@@ -106,7 +106,6 @@ utility which will properly propagate all control sequences:
 shpyx.run(f"script -q -c 'psql -h {host} -p {port} -U {user} -d {database}'", log_output=True)
 # MacOS:
 shpyx.run(f"script -q /dev/null psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
-
 ```
 
 shpyx provides a keyword argument that does this wrapping automatically, `unix_raw`:
@@ -176,38 +175,10 @@ Other 3rd-party libraries for running shell commands in Python:
 
 ## Contributing
 
-To contribute simply open a PR with your changes.
+Contributions are welcome!
 
-All checks (Linters, type checks and tests) automatically run in CI through GitHub Actions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-### Running checks locally
+## License
 
-Local development is done with [uv](https://docs.astral.sh/uv/getting-started/installation/).
-
-Start by installing all the development dependencies:
-```shell
-uv sync
-```
-
-To run the linters use `pre-commit`:
-```shell
-pre-commit run -a
-```
-
-To run the unit tests use `pytest`:
-```shell
-pytest -c tests/pytest.ini tests
-```
-
-To run type checks use `mypy` or `ty` (both are run in CI):
-```shell
-mypy --config-file linters/mypy.toml src tests
-ty check --config-file linters/ty.toml src tests
-```
-
-### Releasing
-
-To release a new version, run the interactive script:
-```shell
-./scripts/release.py
-```
+`shpyx` is distributed under the terms of the [MIT license](LICENSE).

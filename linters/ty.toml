@@ -8,6 +8,9 @@ all = "error"
 # Disable specific rules.
 unsupported-dynamic-base = "ignore"
 missing-override-decorator = "ignore"
+unsound-assignment = "ignore"
+unsound-return-statement = "ignore"
+unsound-yield = "ignore"
 
 [analysis]
 allowed-unresolved-imports = []
