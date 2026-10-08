@@ -275,10 +275,10 @@ class Runner:
             use_shell = True
 
             if unix_raw:
-                if _SYSTEM == "Linux":  # pragma: no branch
+                if _SYSTEM == "Linux":  # pragma: no branch, linux-only
                     # Old format: https://linux.die.net/man/1/script
                     # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"  # pragma: linux-only
+                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
                 elif _SYSTEM == "Darwin":  # pragma: no branch, darwin-only
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
                     args = f"script -q {tmp_file.name} {cmd_str}"
