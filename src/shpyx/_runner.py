@@ -7,7 +7,6 @@ import shlex
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -55,6 +54,25 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     else:
         # The user did not provide a value for the action, use the default.
         return default
+
+
+def _get_unix_raw_cmd(cmd_str: str) -> str:
+    """
+    Wrap a shell command with the `script` Unix utility, so that its output is captured as if written to a terminal.
+    The typescript file is not needed (the output is read from the pipes), so it is discarded to `/dev/null`.
+
+    Raises:
+        ShpyxOSNotSupportedError: The current OS does not support `script`.
+    """
+    if _SYSTEM == "Linux":
+        # Old format: https://linux.die.net/man/1/script
+        # New format: https://man7.org/linux/man-pages/man1/script.1.html
+        return f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
+    if _SYSTEM == "Darwin":
+        # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
+        # The command is executed directly (not through a shell), so wrap it with `sh -c` to support shell logic.
+        return f"script -q /dev/null /bin/sh -c {shlex.quote(cmd_str)}"
+    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
 
 
 class Runner:
@@ -256,6 +274,8 @@ class Runner:
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Supported for both string and list arguments; the command is always run through a shell.
+                      Raises `ShpyxOSNotSupportedError` on systems other than Linux and macOS.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
                              Runner default: `None`, which uses the default decoder factory.
@@ -267,28 +287,19 @@ class Runner:
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
-        tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
-
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
             use_shell = True
-
-            if unix_raw:
-                if _SYSTEM == "Linux":  # pragma: no branch, linux-only
-                    # Old format: https://linux.die.net/man/1/script
-                    # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
-                elif _SYSTEM == "Darwin":  # pragma: no branch, darwin-only
-                    # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
-                    args = f"script -q {tmp_file.name} {cmd_str}"
-                elif _SYSTEM == "Windows":  # pragma: no branch, windows-only
-                    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
-
         else:
             # When the arguments are a list, there is no need to use an actual shell.
-            cmd_str = " ".join(args)
+            cmd_str = shlex.join(args)
             use_shell = False
+
+        if unix_raw:
+            # The `script` utility receives the command as a single shell string, for both string and list arguments.
+            args = _get_unix_raw_cmd(cmd_str)
+            use_shell = True
 
         # Log the command, if required.
         if _is_action_required(user=log_cmd, default=self._log_cmd):
@@ -323,52 +334,60 @@ class Runner:
         if not p.stderr:
             raise ShpyxInternalError("Failed to initialize subprocess (stderr pipe)")
 
-        # Initialize the result object.
-        result = ShellCmdResult(cmd=cmd_str)
+        try:
+            # Initialize the result object.
+            result = ShellCmdResult(cmd=cmd_str)
 
-        # Create a fresh decoder per stream (they are stateful and must not be shared).
-        decoder_factory = decoder_factory or self._decoder_factory
-        stdout_decoder = decoder_factory()
-        stderr_decoder = decoder_factory()
+            # Create a fresh decoder per stream (they are stateful and must not be shared).
+            decoder_factory = decoder_factory or self._decoder_factory
+            stdout_decoder = decoder_factory()
+            stderr_decoder = decoder_factory()
 
-        # Make all the command outputs non-blocking, so that it can be interrupted.
-        if _SYSTEM != "Windows":  # pragma: no branch, unix-only
-            fcntl.fcntl(
-                p.stdout.fileno(),
-                fcntl.F_SETFL,
-                fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-            )
-            fcntl.fcntl(
-                p.stderr.fileno(),
-                fcntl.F_SETFL,
-                fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-            )
+            # Make all the command outputs non-blocking, so that it can be interrupted.
+            if _SYSTEM != "Windows":  # pragma: no branch, unix-only
+                fcntl.fcntl(
+                    p.stdout.fileno(),
+                    fcntl.F_SETFL,
+                    fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
+                )
+                fcntl.fcntl(
+                    p.stderr.fileno(),
+                    fcntl.F_SETFL,
+                    fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
+                )
 
-        # Run the command in a subprocess, periodically checking for outputs.
-        while p.poll() is None:
-            # Poll both outputs for any new data.
-            stdout_data = p.stdout.read()
-            stderr_data = p.stderr.read()
+            # Run the command in a subprocess, periodically checking for outputs.
+            while p.poll() is None:
+                # Poll both outputs for any new data.
+                stdout_data = p.stdout.read()
+                stderr_data = p.stderr.read()
 
-            # Add partial outputs to result and log them, if needed.
+                # Add partial outputs to result and log them, if needed.
+                self._add_stdout(
+                    result=result, decoder=stdout_decoder, data=stdout_data, log_output=log_output, final=False
+                )
+                self._add_stderr(
+                    result=result, decoder=stderr_decoder, data=stderr_data, log_output=log_output, final=False
+                )
+
+                time.sleep(0.01)
+
+            # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
+            final_stdout, final_stderr = p.communicate()
             self._add_stdout(
-                result=result, decoder=stdout_decoder, data=stdout_data, log_output=log_output, final=False
+                result=result, decoder=stdout_decoder, data=final_stdout, log_output=log_output, final=True
             )
             self._add_stderr(
-                result=result, decoder=stderr_decoder, data=stderr_data, log_output=log_output, final=False
+                result=result, decoder=stderr_decoder, data=final_stderr, log_output=log_output, final=True
             )
-
-            time.sleep(0.01)
-
-        # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
-        final_stdout, final_stderr = p.communicate()
-        self._add_stdout(result=result, decoder=stdout_decoder, data=final_stdout, log_output=log_output, final=True)
-        self._add_stderr(result=result, decoder=stderr_decoder, data=final_stderr, log_output=log_output, final=True)
-
-        # Cleanup.
-        p.stdout.close()
-        p.stderr.close()
-        tmp_file.close()
+        except BaseException:
+            # Do not leave an orphaned child process behind on any failure, including `KeyboardInterrupt`.
+            # On success, the pipes are already closed by `communicate`.
+            p.kill()
+            p.wait()
+            p.stdout.close()
+            p.stderr.close()
+            raise
 
         # Save return code.
         result.return_code = p.returncode

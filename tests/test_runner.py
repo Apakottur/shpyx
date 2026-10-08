@@ -8,6 +8,7 @@ import codecs
 import platform
 import signal
 import subprocess
+import sys
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
@@ -53,6 +54,16 @@ def test_echo_as_list() -> None:
     """Simple use case when input is a list"""
     result = shpyx.run(["echo", "1"])
     _verify_result(result, return_code=0, stdout="1\n", stderr="")
+
+
+def test_list_cmd_display(capfd: pytest.CaptureFixture[str]) -> None:
+    """The displayed command of list arguments is shell-quoted, so it can be copied back into a shell"""
+    result = shpyx.run(["echo", "a b"], log_cmd=True)
+    _verify_result(result, return_code=0, stdout="a b\n", stderr="")
+    assert result.cmd == "echo 'a b'"
+
+    cap_stdout, cap_stderr = capfd.readouterr()
+    assert (cap_stdout, cap_stderr) == ("Running: echo 'a b'\n", "")
 
 
 def test_pipe() -> None:
@@ -210,6 +221,29 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
             assert str(exc.value) == "Failed to initialize subprocess (stderr pipe)"
 
 
+def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
+    """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
+    orig = subprocess.Popen
+    children: list[Any] = []
+
+    def _popen(*args: Any, **kwargs: Any) -> Any:
+        children.append(orig(*args, **kwargs))
+        return children[-1]
+
+    mocker.patch("shpyx._runner.subprocess.Popen", _popen)
+    mocker.patch("shpyx._runner.time.sleep", side_effect=KeyboardInterrupt)
+
+    with pytest.raises(KeyboardInterrupt):
+        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+
+    (proc,) = children
+    assert proc.returncode is not None
+    assert proc.stdout is not None
+    assert proc.stdout.closed
+    assert proc.stderr is not None
+    assert proc.stderr.closed
+
+
 def test_signal_names_enabled() -> None:
     signal_id = signal.Signals.SIGINT
     signal_name: str = signal.Signals(signal_id).name
@@ -313,6 +347,51 @@ def test_unix_raw_enabled() -> None:
     )
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
+
+    # Shell logic in the command must run entirely inside `script`, on all platforms.
+    output_by_platform = {
+        "Darwin": "^D\x08\x08a\r\nb\r\n",
+        "Linux": "a\r\nb\r\n",
+    }
+    result = shpyx.run("echo a; echo b", unix_raw=True)
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # List arguments are supported as well.
+    output_by_platform = {
+        "Darwin": "^D\x08\x08a b\r\n",
+        "Linux": "a b\r\n",
+    }
+    result = shpyx.run(["echo", "a b"], unix_raw=True)
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+    assert result.cmd == "echo 'a b'"
+
+
+@pytest.mark.parametrize(
+    ("system", "expected"),
+    [
+        ("Linux", "script --return --quiet --command 'echo a; echo b' /dev/null"),
+        ("Darwin", "script -q /dev/null /bin/sh -c 'echo a; echo b'"),
+        ("Windows", None),
+        ("Java", None),
+    ],
+)
+def test_unix_raw_cmd(mocker: pytest_mock.MockerFixture, system: str, expected: str | None) -> None:
+    """
+    Test the `script` command built for `unix_raw`, on every platform.
+    """
+    mocker.patch("shpyx._runner._SYSTEM", system)
+
+    if expected is None:
+        with pytest.raises(shpyx.ShpyxOSNotSupportedError, match=f"Unsupported system: {system}"):
+            shpyx.run("echo a; echo b", unix_raw=True)
+        return
+
+    popen = mocker.patch("shpyx._runner.subprocess.Popen", side_effect=OSError)
+    with pytest.raises(shpyx.ShpyxInternalError):
+        shpyx.run("echo a; echo b", unix_raw=True)
+
+    assert popen.call_args.args == (expected,)
+    assert popen.call_args.kwargs["shell"] is True
 
 
 def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:
