@@ -1,10 +1,11 @@
-from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
-from shpyx.result import ShellCmdResult
-from shpyx.runner import Runner, run
+from shpyx._errors import ShpyxError, ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
+from shpyx._result import ShellCmdResult
+from shpyx._runner import Runner, run
 
 __all__ = [
     "Runner",
     "ShellCmdResult",
+    "ShpyxError",
     "ShpyxInternalError",
     "ShpyxOSNotSupportedError",
     "ShpyxVerificationError",

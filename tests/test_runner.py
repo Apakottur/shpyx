@@ -196,7 +196,7 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
                 p.stderr = None
                 return p
 
-    mocker.patch("shpyx.runner.subprocess.Popen", _popen)
+    mocker.patch("shpyx._runner.subprocess.Popen", _popen)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")

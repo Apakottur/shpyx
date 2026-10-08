@@ -12,8 +12,8 @@ import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from shpyx.errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
-from shpyx.result import ShellCmdResult
+from shpyx._errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
+from shpyx._result import ShellCmdResult
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 _SYSTEM = platform.system()
 
 
-if _SYSTEM != "Windows":
+if _SYSTEM != "Windows":  # pragma: no cover
     import fcntl
 
 
@@ -275,14 +275,14 @@ class Runner:
             use_shell = True
 
             if unix_raw:
-                if _SYSTEM == "Linux":
+                if _SYSTEM == "Linux":  # pragma: no cover
                     # Old format: https://linux.die.net/man/1/script
                     # New format: https://man7.org/linux/man-pages/man1/script.1.html
                     args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
-                elif _SYSTEM == "Darwin":
+                elif _SYSTEM == "Darwin":  # pragma: no cover
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
                     args = f"script -q {tmp_file.name} {cmd_str}"
-                elif _SYSTEM == "Windows":
+                elif _SYSTEM == "Windows":  # pragma: no cover
                     raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
 
         else:
@@ -332,7 +332,7 @@ class Runner:
         stderr_decoder = decoder_factory()
 
         # Make all the command outputs non-blocking, so that it can be interrupted.
-        if _SYSTEM != "Windows":
+        if _SYSTEM != "Windows":  # pragma: no cover
             fcntl.fcntl(
                 p.stdout.fileno(),
                 fcntl.F_SETFL,
