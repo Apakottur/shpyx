@@ -8,6 +8,7 @@ import codecs
 import platform
 import signal
 import subprocess
+import sys
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
@@ -208,6 +209,29 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
             assert str(exc.value) == "Failed to initialize subprocess (stdout pipe)"
         case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
             assert str(exc.value) == "Failed to initialize subprocess (stderr pipe)"
+
+
+def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
+    """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
+    orig = subprocess.Popen
+    children: list[Any] = []
+
+    def _popen(*args: Any, **kwargs: Any) -> Any:
+        children.append(orig(*args, **kwargs))
+        return children[-1]
+
+    mocker.patch("shpyx._runner.subprocess.Popen", _popen)
+    mocker.patch("shpyx._runner.time.sleep", side_effect=KeyboardInterrupt)
+
+    with pytest.raises(KeyboardInterrupt):
+        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+
+    (proc,) = children
+    assert proc.returncode is not None
+    assert proc.stdout is not None
+    assert proc.stdout.closed
+    assert proc.stderr is not None
+    assert proc.stderr.closed
 
 
 def test_signal_names_enabled() -> None:

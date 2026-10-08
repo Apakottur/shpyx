@@ -291,58 +291,68 @@ class Runner:
         if not p.stderr:
             raise ShpyxInternalError("Failed to initialize subprocess (stderr pipe)")
 
-        # Initialize the result object.
-        result = ShellCmdResult(cmd=cmd_str)
+        try:
+            # Initialize the result object.
+            result = ShellCmdResult(cmd=cmd_str)
 
-        # Create a fresh decoder per stream (they are stateful and must not be shared).
-        decoder_factory = decoder_factory or self._decoder_factory
-        stdout_decoder = decoder_factory()
-        stderr_decoder = decoder_factory()
+            # Create a fresh decoder per stream (they are stateful and must not be shared).
+            decoder_factory = decoder_factory or self._decoder_factory
+            stdout_decoder = decoder_factory()
+            stderr_decoder = decoder_factory()
 
-        # Make all the command outputs non-blocking, so that it can be interrupted.
-        if _SYSTEM != "Windows":  # pragma: no branch, unix-only
-            fcntl.fcntl(
-                p.stdout.fileno(),
-                fcntl.F_SETFL,
-                fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-            )
-            fcntl.fcntl(
-                p.stderr.fileno(),
-                fcntl.F_SETFL,
-                fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-            )
+            # Make all the command outputs non-blocking, so that it can be interrupted.
+            if _SYSTEM != "Windows":  # pragma: no branch, unix-only
+                fcntl.fcntl(
+                    p.stdout.fileno(),
+                    fcntl.F_SETFL,
+                    fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
+                )
+                fcntl.fcntl(
+                    p.stderr.fileno(),
+                    fcntl.F_SETFL,
+                    fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
+                )
 
-        # Run the command in a subprocess, periodically checking for outputs.
-        while p.poll() is None:
-            # Poll both outputs for any new data.
-            stdout_data = p.stdout.read()
-            stderr_data = p.stderr.read()
+            # Run the command in a subprocess, periodically checking for outputs.
+            while p.poll() is None:
+                # Poll both outputs for any new data.
+                stdout_data = p.stdout.read()
+                stderr_data = p.stderr.read()
 
-            # Add partial outputs to result and log them, if needed.
+                # Add partial outputs to result and log them, if needed.
+                self._add_output(
+                    result=result,
+                    stdout=self._decode_output(
+                        data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
+                    ),
+                    stderr=self._decode_output(
+                        data=stderr_data, decoder=stderr_decoder, log_output=log_output, final=False
+                    ),
+                )
+
+                time.sleep(0.01)
+
+            # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
+            final_stdout, final_stderr = p.communicate()
             self._add_output(
                 result=result,
                 stdout=self._decode_output(
-                    data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
+                    data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True
                 ),
                 stderr=self._decode_output(
-                    data=stderr_data, decoder=stderr_decoder, log_output=log_output, final=False
+                    data=final_stderr, decoder=stderr_decoder, log_output=log_output, final=True
                 ),
             )
-
-            time.sleep(0.01)
-
-        # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
-        final_stdout, final_stderr = p.communicate()
-        self._add_output(
-            result=result,
-            stdout=self._decode_output(data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True),
-            stderr=self._decode_output(data=final_stderr, decoder=stderr_decoder, log_output=log_output, final=True),
-        )
-
-        # Cleanup.
-        p.stdout.close()
-        p.stderr.close()
-        tmp_file.close()
+        except BaseException:
+            # Do not leave an orphaned child process behind on any failure, including `KeyboardInterrupt`.
+            p.kill()
+            p.wait()
+            raise
+        finally:
+            # Cleanup.
+            p.stdout.close()
+            p.stderr.close()
+            tmp_file.close()
 
         # Save return code.
         result.return_code = p.returncode
