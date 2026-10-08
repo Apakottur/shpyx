@@ -56,6 +56,16 @@ def test_echo_as_list() -> None:
     _verify_result(result, return_code=0, stdout="1\n", stderr="")
 
 
+def test_list_cmd_display(capfd: pytest.CaptureFixture[str]) -> None:
+    """The displayed command of list arguments is shell-quoted, so it can be copied back into a shell"""
+    result = shpyx.run(["echo", "a b"], log_cmd=True)
+    _verify_result(result, return_code=0, stdout="a b\n", stderr="")
+    assert result.cmd == "echo 'a b'"
+
+    cap_stdout, cap_stderr = capfd.readouterr()
+    assert (cap_stdout, cap_stderr) == ("Running: echo 'a b'\n", "")
+
+
 def test_pipe() -> None:
     """Test the pipe operator, making sure an actual shell is used for strings"""
     result = shpyx.run("seq 1 5 | grep '2'")
@@ -337,6 +347,51 @@ def test_unix_raw_enabled() -> None:
     )
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
+
+    # Shell logic in the command must run entirely inside `script`, on all platforms.
+    output_by_platform = {
+        "Darwin": "^D\x08\x08a\r\nb\r\n",
+        "Linux": "a\r\nb\r\n",
+    }
+    result = shpyx.run("echo a; echo b", unix_raw=True)
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
+    # List arguments are supported as well.
+    output_by_platform = {
+        "Darwin": "^D\x08\x08a b\r\n",
+        "Linux": "a b\r\n",
+    }
+    result = shpyx.run(["echo", "a b"], unix_raw=True)
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+    assert result.cmd == "echo 'a b'"
+
+
+@pytest.mark.parametrize(
+    ("system", "expected"),
+    [
+        ("Linux", "script --return --quiet --command 'echo a; echo b' /dev/null"),
+        ("Darwin", "script -q /dev/null /bin/sh -c 'echo a; echo b'"),
+        ("Windows", None),
+        ("Java", None),
+    ],
+)
+def test_unix_raw_cmd(mocker: pytest_mock.MockerFixture, system: str, expected: str | None) -> None:
+    """
+    Test the `script` command built for `unix_raw`, on every platform.
+    """
+    mocker.patch("shpyx._runner._SYSTEM", system)
+
+    if expected is None:
+        with pytest.raises(shpyx.ShpyxOSNotSupportedError, match=f"Unsupported system: {system}"):
+            shpyx.run("echo a; echo b", unix_raw=True)
+        return
+
+    popen = mocker.patch("shpyx._runner.subprocess.Popen", side_effect=OSError)
+    with pytest.raises(shpyx.ShpyxInternalError):
+        shpyx.run("echo a; echo b", unix_raw=True)
+
+    assert popen.call_args.args == (expected,)
+    assert popen.call_args.kwargs["shell"] is True
 
 
 def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:

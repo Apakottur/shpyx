@@ -7,7 +7,6 @@ import shlex
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -47,6 +46,25 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     runner.
     """
     return default if user is None else user
+
+
+def _get_unix_raw_cmd(cmd_str: str) -> str:
+    """
+    Wrap a shell command with the `script` Unix utility, so that its output is captured as if written to a terminal.
+    The typescript file is not needed (the output is read from the pipes), so it is discarded to `/dev/null`.
+
+    Raises:
+        ShpyxOSNotSupportedError: The current OS does not support `script`.
+    """
+    if _SYSTEM == "Linux":
+        # Old format: https://linux.die.net/man/1/script
+        # New format: https://man7.org/linux/man-pages/man1/script.1.html
+        return f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
+    if _SYSTEM == "Darwin":
+        # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
+        # The command is executed directly (not through a shell), so wrap it with `sh -c` to support shell logic.
+        return f"script -q /dev/null /bin/sh -c {shlex.quote(cmd_str)}"
+    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
 
 
 class Runner:
@@ -224,6 +242,8 @@ class Runner:
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Supported for both string and list arguments; the command is always run through a shell.
+                      Raises `ShpyxOSNotSupportedError` on systems other than Linux and macOS.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
                              Runner default: `None`, which uses the default decoder factory.
@@ -235,28 +255,19 @@ class Runner:
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
-        tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
-
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
             use_shell = True
-
-            if unix_raw:
-                if _SYSTEM == "Linux":  # pragma: no branch, linux-only
-                    # Old format: https://linux.die.net/man/1/script
-                    # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
-                elif _SYSTEM == "Darwin":  # pragma: no branch, darwin-only
-                    # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
-                    args = f"script -q {tmp_file.name} {cmd_str}"
-                elif _SYSTEM == "Windows":  # pragma: no branch, windows-only
-                    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
-
         else:
             # When the arguments are a list, there is no need to use an actual shell.
-            cmd_str = " ".join(args)
+            cmd_str = shlex.join(args)
             use_shell = False
+
+        if unix_raw:
+            # The `script` utility receives the command as a single shell string, for both string and list arguments.
+            args = _get_unix_raw_cmd(cmd_str)
+            use_shell = True
 
         # Log the command, if required.
         if _is_action_required(user=log_cmd, default=self._log_cmd):
@@ -352,7 +363,6 @@ class Runner:
             # Cleanup.
             p.stdout.close()
             p.stderr.close()
-            tmp_file.close()
 
         # Save return code.
         result.return_code = p.returncode
