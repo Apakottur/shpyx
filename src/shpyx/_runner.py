@@ -46,15 +46,7 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     Returns whether an action needs to be done, based on whether the user required it and the default value of the
     runner.
     """
-    if user is True:
-        # The user explicitly set the value to `True`.
-        return True
-    elif user is False:
-        # The user explicitly set the value to `False`.
-        return False
-    else:
-        # The user did not provide a value for the action, use the default.
-        return default
+    return default if user is None else user
 
 
 class Runner:
@@ -102,63 +94,39 @@ class Runner:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def _add_stdout(
+    def _decode_output(
         self,
         *,
-        result: ShellCmdResult,
         data: bytes | None,
         log_output: bool | None,
         decoder: codecs.IncrementalDecoder,
         final: bool,
-    ) -> None:
+    ) -> str:
         """
-        Add partial stdout output to the result.
+        Decode a partial output chunk of a single stream, and log it if required.
 
         Args:
-            result: The result object of the command.
-            data: The partial stdout output to add.
+            data: The partial output to decode.
             log_output: Whether to log the output, as supplied to `.run`.
             decoder: Stream decoder.
             final: Whether this is the last chunk, flushing any trailing incomplete bytes.
+
+        Returns:
+            The decoded output (possibly empty).
         """
         decoded_data = decoder.decode(data or b"", final)
-        if not decoded_data:
-            return
-
-        result.stdout += decoded_data
-        result.all_output += decoded_data
-
-        if _is_action_required(user=log_output, default=self._log_output):
+        if decoded_data and _is_action_required(user=log_output, default=self._log_output):
             self._log(decoded_data)
+        return decoded_data
 
-    def _add_stderr(
-        self,
-        *,
-        result: ShellCmdResult,
-        data: bytes | None,
-        log_output: bool | None,
-        decoder: codecs.IncrementalDecoder,
-        final: bool,
-    ) -> None:
+    @staticmethod
+    def _add_output(*, result: ShellCmdResult, stdout: str, stderr: str) -> None:
         """
-        Add partial stderr output to the result.
-
-        Args:
-            result: The result object of the command.
-            data: The partial stderr output to add.
-            log_output: Whether to log the output, as supplied to `.run`.
-            decoder: Stream decoder.
-            final: Whether this is the last chunk, flushing any trailing incomplete bytes.
+        Add decoded partial outputs to the result, keeping `all_output` in arrival order.
         """
-        decoded_data = decoder.decode(data or b"", final)
-        if not decoded_data:
-            return
-
-        result.stderr += decoded_data
-        result.all_output += decoded_data
-
-        if _is_action_required(user=log_output, default=self._log_output):
-            self._log(decoded_data)
+        result.stdout += stdout
+        result.stderr += stderr
+        result.all_output += stdout + stderr
 
     def _verify_result(
         self,
@@ -351,19 +319,25 @@ class Runner:
             stderr_data = p.stderr.read()
 
             # Add partial outputs to result and log them, if needed.
-            self._add_stdout(
-                result=result, decoder=stdout_decoder, data=stdout_data, log_output=log_output, final=False
-            )
-            self._add_stderr(
-                result=result, decoder=stderr_decoder, data=stderr_data, log_output=log_output, final=False
+            self._add_output(
+                result=result,
+                stdout=self._decode_output(
+                    data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
+                ),
+                stderr=self._decode_output(
+                    data=stderr_data, decoder=stderr_decoder, log_output=log_output, final=False
+                ),
             )
 
             time.sleep(0.01)
 
         # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
         final_stdout, final_stderr = p.communicate()
-        self._add_stdout(result=result, decoder=stdout_decoder, data=final_stdout, log_output=log_output, final=True)
-        self._add_stderr(result=result, decoder=stderr_decoder, data=final_stderr, log_output=log_output, final=True)
+        self._add_output(
+            result=result,
+            stdout=self._decode_output(data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True),
+            stderr=self._decode_output(data=final_stderr, decoder=stderr_decoder, log_output=log_output, final=True),
+        )
 
         # Cleanup.
         p.stdout.close()
