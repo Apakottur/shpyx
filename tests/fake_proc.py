@@ -40,4 +40,4 @@ def patch_fake_proc(
     stderr_chunks: list[bytes],
 ) -> None:
     proc = _FakeProc(stdout_chunks, stderr_chunks or [])
-    mocker.patch("shpyx.runner.subprocess.Popen", return_value=proc)
+    mocker.patch("shpyx._runner.subprocess.Popen", return_value=proc)
