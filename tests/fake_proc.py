@@ -7,30 +7,23 @@ class _FakeStream:
     def __init__(self, chunks: list[bytes]) -> None:
         self.chunks = list(chunks)
 
-    def read(self) -> bytes:
+    def read(self, _size: int) -> bytes:
         return self.chunks.pop(0) if self.chunks else b""
-
-    def fileno(self) -> int:
-        return 0
 
     def close(self) -> None:
         pass
 
 
 class _FakeProc:
-    """A `subprocess.Popen` stand-in that emits controlled output chunks through the read loop."""
+    """A `subprocess.Popen` stand-in that emits controlled output chunks through the stream readers."""
 
     def __init__(self, stdout_chunks: list[bytes], stderr_chunks: list[bytes]) -> None:
         self.stdout = _FakeStream(stdout_chunks)
         self.stderr = _FakeStream(stderr_chunks)
         self.returncode = 0
 
-    def poll(self) -> int | None:
-        # Keep the read loop going while either stream still has queued chunks.
-        return None if (self.stdout.chunks or self.stderr.chunks) else 0
-
-    def communicate(self) -> tuple[bytes, bytes]:
-        return b"", b""
+    def wait(self) -> int:
+        return self.returncode
 
 
 def patch_fake_proc(

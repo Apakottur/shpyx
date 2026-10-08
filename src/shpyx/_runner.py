@@ -3,14 +3,15 @@ from __future__ import annotations
 import codecs
 import os
 import platform
+import queue
 import shlex
 import signal
 import subprocess
 import sys
 import tempfile
-import time
+import threading
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import IO, TYPE_CHECKING
 
 from shpyx._errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
 from shpyx._result import ShellCmdResult
@@ -21,9 +22,8 @@ if TYPE_CHECKING:
 """The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
 _SYSTEM = platform.system()
 
-
-if _SYSTEM != "Windows":  # pragma: no branch, unix-only
-    import fcntl
+# The maximal number of bytes to read from a command output stream at once.
+_READ_SIZE = 64 * 1024
 
 
 # A callable that returns a fresh incremental decoder for a single command output stream.
@@ -47,6 +47,23 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     runner.
     """
     return default if user is None else user
+
+
+def _read_stream(stream: IO[bytes], stream_id: int, chunks: queue.SimpleQueue[tuple[int, bytes]]) -> None:
+    """
+    Read a command output stream until EOF, pushing each chunk to a queue shared by all the output streams.
+    An empty chunk is always pushed last, to mark the end of the stream.
+
+    Args:
+        stream: The unbuffered output stream, where each read returns whatever data is available (up to the size).
+        stream_id: The identifier of the stream, pushed alongside each chunk.
+        chunks: The shared queue.
+    """
+    try:
+        while chunk := stream.read(_READ_SIZE):
+            chunks.put((stream_id, chunk))
+    finally:
+        chunks.put((stream_id, b""))
 
 
 class Runner:
@@ -118,15 +135,6 @@ class Runner:
         if decoded_data and _is_action_required(user=log_output, default=self._log_output):
             self._log(decoded_data)
         return decoded_data
-
-    @staticmethod
-    def _add_output(*, result: ShellCmdResult, stdout: str, stderr: str) -> None:
-        """
-        Add decoded partial outputs to the result, keeping `all_output` in arrival order.
-        """
-        result.stdout += stdout
-        result.stderr += stderr
-        result.all_output += stdout + stderr
 
     def _verify_result(
         self,
@@ -279,6 +287,8 @@ class Runner:
                 shell=use_shell,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                # Unbuffered pipes, so that each read returns as soon as any data is available.
+                bufsize=0,
                 env=cmd_env,
                 cwd=exec_dir,
             )
@@ -296,48 +306,47 @@ class Runner:
 
         # Create a fresh decoder per stream (they are stateful and must not be shared).
         decoder_factory = decoder_factory or self._decoder_factory
-        stdout_decoder = decoder_factory()
-        stderr_decoder = decoder_factory()
-
-        # Make all the command outputs non-blocking, so that it can be interrupted.
-        if _SYSTEM != "Windows":  # pragma: no branch, unix-only
-            fcntl.fcntl(
-                p.stdout.fileno(),
-                fcntl.F_SETFL,
-                fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-            )
-            fcntl.fcntl(
-                p.stderr.fileno(),
-                fcntl.F_SETFL,
-                fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-            )
-
-        # Run the command in a subprocess, periodically checking for outputs.
-        while p.poll() is None:
-            # Poll both outputs for any new data.
-            stdout_data = p.stdout.read()
-            stderr_data = p.stderr.read()
-
-            # Add partial outputs to result and log them, if needed.
-            self._add_output(
-                result=result,
-                stdout=self._decode_output(
-                    data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
-                ),
-                stderr=self._decode_output(
-                    data=stderr_data, decoder=stderr_decoder, log_output=log_output, final=False
-                ),
-            )
-
-            time.sleep(0.01)
-
-        # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
-        final_stdout, final_stderr = p.communicate()
-        self._add_output(
-            result=result,
-            stdout=self._decode_output(data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True),
-            stderr=self._decode_output(data=final_stderr, decoder=stderr_decoder, log_output=log_output, final=True),
+        stdout_parts: list[str] = []
+        stderr_parts: list[str] = []
+        all_output_parts: list[str] = []
+        streams = (
+            (p.stdout, decoder_factory(), stdout_parts),
+            (p.stderr, decoder_factory(), stderr_parts),
         )
+
+        # Read each output stream in its own thread, since a blocking read of one stream must not prevent the other
+        # from being drained (otherwise the command may block on a full pipe). The chunks are consumed here in arrival
+        # order, which keeps `all_output` interleaved as the command wrote it.
+        chunks: queue.SimpleQueue[tuple[int, bytes]] = queue.SimpleQueue()
+        readers = [
+            threading.Thread(target=_read_stream, args=(stream, stream_id, chunks), daemon=True)
+            for stream_id, (stream, _, _) in enumerate(streams)
+        ]
+        for reader in readers:
+            reader.start()
+
+        open_streams = len(streams)
+        while open_streams:
+            stream_id, chunk = chunks.get()
+            _, decoder, parts = streams[stream_id]
+
+            # An empty chunk marks the end of the stream, flushing any trailing incomplete bytes.
+            final = not chunk
+            if final:
+                open_streams -= 1
+
+            # Add the partial output to the result and log it, if needed.
+            decoded_data = self._decode_output(data=chunk, decoder=decoder, log_output=log_output, final=final)
+            parts.append(decoded_data)
+            all_output_parts.append(decoded_data)
+
+        for reader in readers:
+            reader.join()
+        p.wait()
+
+        result.stdout = "".join(stdout_parts)
+        result.stderr = "".join(stderr_parts)
+        result.all_output = "".join(all_output_parts)
 
         # Cleanup.
         p.stdout.close()

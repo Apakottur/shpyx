@@ -8,7 +8,9 @@ import codecs
 import platform
 import signal
 import subprocess
+import sys
 import tempfile
+import threading
 from enum import Enum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -345,3 +347,41 @@ def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> No
 
     result = shpyx.run("dummy_cmd", decoder_factory=_AppendADecoder)
     assert result.stdout == "haia"
+
+
+def test_large_stderr_before_stdout() -> None:
+    """
+    A command filling the stderr pipe before writing to (and closing) stdout must not deadlock.
+    Previously, reading stdout blocked until EOF on Windows, while the command blocked on a full stderr pipe.
+    """
+    size = 200_000
+    code = (
+        "import sys;"
+        f"sys.stderr.write('e' * {size}); sys.stderr.flush();"
+        f"sys.stdout.write('o' * {size}); sys.stdout.flush()"
+    )
+    results: list[shpyx.ShellCmdResult] = []
+
+    # Run in a thread, so that a deadlock fails the test instead of hanging it.
+    thread = threading.Thread(target=lambda: results.append(shpyx.run([sys.executable, "-c", code])), daemon=True)
+    thread.start()
+    thread.join(timeout=60)
+    assert not thread.is_alive(), "The command deadlocked"
+
+    _verify_result(results[0], stdout="o" * size, stderr="e" * size)
+
+
+def test_all_output_interleaving() -> None:
+    """
+    `all_output` must keep the stdout and stderr chunks in the order they were written.
+    """
+    code = (
+        "import sys, time;"
+        "sys.stdout.write('a'); sys.stdout.flush(); time.sleep(0.2);"
+        "sys.stderr.write('b'); sys.stderr.flush(); time.sleep(0.2);"
+        "sys.stdout.write('c'); sys.stdout.flush()"
+    )
+    result = shpyx.run([sys.executable, "-c", code])
+
+    _verify_result(result, stdout="ac", stderr="b")
+    assert result.all_output == "abc"
