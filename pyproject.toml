@@ -4,6 +4,7 @@ requires = ["hatchling", "hatch-vcs"]
 
 [dependency-groups]
 dev = [
+  "coverage-conditional-plugin==0.9.0",
   "httpx==0.28.1",
   "mypy==2.4.0",
   "prek==0.5.5",
