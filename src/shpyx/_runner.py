@@ -356,12 +356,13 @@ class Runner:
             )
         except BaseException:
             # Do not leave an orphaned child process behind on any failure, including `KeyboardInterrupt`.
-            # On success, the pipes are already closed by `communicate`.
             p.kill()
             p.wait()
+            raise
+        finally:
+            # Cleanup.
             p.stdout.close()
             p.stderr.close()
-            raise
 
         # Save return code.
         result.return_code = p.returncode
