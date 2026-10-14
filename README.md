@@ -41,18 +41,11 @@ In string format:
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
-In list format (run directly, without a shell):
+In list format:
 
 ```python
 >>> shpyx.run(["echo", "1"])
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
-```
-
-For list arguments, `cmd` in the result is the shell-quoted command (using `shlex.join`):
-
-```python
->>> shpyx.run(["echo", "a b"]).cmd
-"echo 'a b'"
 ```
 
 ### Run a command and print live output
