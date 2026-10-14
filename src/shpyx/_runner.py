@@ -179,15 +179,6 @@ class Runner:
             self._log(decoded_data)
         return decoded_data
 
-    @staticmethod
-    def _add_output(*, result: ShellCmdResult, stdout: str, stderr: str) -> None:
-        """
-        Add decoded partial outputs to the result, keeping `all_output` in arrival order.
-        """
-        result.stdout += stdout
-        result.stderr += stderr
-        result.all_output += stdout + stderr
-
     def _verify_result(
         self,
         *,
@@ -371,8 +362,7 @@ class Runner:
                 stderr_data = p.stderr.read()
 
                 # Add partial outputs to result and log them, if needed.
-                self._add_output(
-                    result=result,
+                result._add_output(  # noqa: SLF001
                     stdout=self._decode_output(
                         data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
                     ),
@@ -385,8 +375,7 @@ class Runner:
 
             # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
             final_stdout, final_stderr = p.communicate()
-            self._add_output(
-                result=result,
+            result._add_output(  # noqa: SLF001
                 stdout=self._decode_output(
                     data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True
                 ),
@@ -394,6 +383,9 @@ class Runner:
                     data=final_stderr, decoder=stderr_decoder, log_output=log_output, final=True
                 ),
             )
+
+        # Combine all the collected output parts.
+        result._join_output()  # noqa: SLF001
 
         # Save return code.
         result.return_code = p.returncode
