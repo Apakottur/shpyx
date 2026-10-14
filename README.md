@@ -133,7 +133,7 @@ The following arguments are supported by `Runner`:
 | `log_output`         | Log the live output of the command (while it is being executed).           | `False` |
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `True`  |
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `False` |
-| `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `True`  |
+| `use_signal_names`   | Log the name of the signal that killed the command, if any.                | `True`  |
 | `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `UTF-8` |
 
 The following arguments are supported by `run`:
@@ -144,7 +144,7 @@ The following arguments are supported by `run`:
 | `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default`         |
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default`         |
-| `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `Runner default`         |
+| `use_signal_names`   | Log the name of the signal that killed the command, if any.                | `Runner default`         |
 | `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `Runner default`         |
 | `env`                | Environment variables to set during the execution of the command.          | `Same as parent process` |
 | `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `Same as parent process` |

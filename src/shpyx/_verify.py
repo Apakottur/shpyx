@@ -37,10 +37,10 @@ def verify_result(
     if not success:
         return_code_str = str(result.return_code)
 
-        # Add the signal name, if applicable.
-        if use_signal_names:
+        # Add the signal name, if the command was killed by a signal (`subprocess` returns `-N` for signal `N`).
+        if use_signal_names and result.return_code < 0:
             try:
-                signal_name: str = signal.Signals(result.return_code).name
+                signal_name: str = signal.Signals(-result.return_code).name
                 return_code_str += f" ({signal_name})"
             except ValueError:
                 pass
