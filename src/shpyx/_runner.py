@@ -109,6 +109,33 @@ class _Process(subprocess.Popen[bytes]):
         super().__exit__(exc_type, value, traceback)
 
 
+class _OutputParts:
+    """
+    The decoded output of a command, collected in parts while it runs and joined once it exits (for performance).
+    """
+
+    def __init__(self) -> None:
+        self._stdout: list[str] = []
+        self._stderr: list[str] = []
+        self._all_output: list[str] = []
+
+    def add(self, *, stdout: str, stderr: str) -> None:
+        """
+        Add decoded partial outputs, keeping `all_output` in arrival order.
+        """
+        self._stdout.append(stdout)
+        self._stderr.append(stderr)
+        self._all_output += (stdout, stderr)
+
+    def join(self, result: ShellCmdResult) -> None:
+        """
+        Concatenate all the collected parts into the output fields of the result.
+        """
+        result.stdout = "".join(self._stdout)
+        result.stderr = "".join(self._stderr)
+        result.all_output = "".join(self._all_output)
+
+
 class Runner:
     """
     An instance of a shell command runner, used to run shell commands with a specific runner configuration.
@@ -338,6 +365,7 @@ class Runner:
 
             # Initialize the result object.
             result = ShellCmdResult(cmd=cmd_str)
+            output = _OutputParts()
 
             # Create a fresh decoder per stream (they are stateful and must not be shared).
             decoder_factory = decoder_factory or self._decoder_factory
@@ -364,7 +392,7 @@ class Runner:
                 stderr_data = p.stderr.read()
 
                 # Add partial outputs to result and log them, if needed.
-                result._add_output(  # noqa: SLF001
+                output.add(
                     stdout=self._decode_output(
                         data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
                     ),
@@ -377,7 +405,7 @@ class Runner:
 
             # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
             final_stdout, final_stderr = p.communicate()
-            result._add_output(  # noqa: SLF001
+            output.add(
                 stdout=self._decode_output(
                     data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True
                 ),
@@ -387,7 +415,7 @@ class Runner:
             )
 
         # Combine all the collected output parts.
-        result._join_output()  # noqa: SLF001
+        output.join(result)
 
         # Save return code.
         result.return_code = p.returncode
