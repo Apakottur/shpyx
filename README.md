@@ -146,7 +146,9 @@ The following arguments are supported by `run`:
 `shpyx` is a wrapper around the excellent [subprocess](https://docs.python.org/3/library/subprocess.html) module, aiming
 to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
 
-While the core API logic is fully supported on both Unix and Windows systems, there is some OS specific code for minor quality-of-life
+`shpyx` supports Linux, macOS and Windows. Importing it on any other system raises `ShpyxOSNotSupportedError`.
+
+While the core API logic is fully supported on all of them, there is some OS specific code for minor quality-of-life
 improvements.
 For example, on non Windows systems, [fcntl](https://docs.python.org/3/library/fcntl.html) is used to configure the subprocess to
 always be incorruptible (which means one can CTRL-C out of any command).

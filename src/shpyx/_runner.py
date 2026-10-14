@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from shpyx._errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
@@ -18,11 +19,33 @@ if TYPE_CHECKING:
     from pathlib import Path
     from types import TracebackType
 
-"""The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
-_SYSTEM = platform.system()
+
+class _System(Enum):
+    """The platform systems supported by shpyx, used for platform specific code."""
+
+    LINUX = "Linux"
+    DARWIN = "Darwin"
+    WINDOWS = "Windows"
 
 
-if _SYSTEM != "Windows":  # pragma: no branch, unix-only
+def _get_system() -> _System:
+    """
+    Get the current platform system.
+
+    Raises:
+        ShpyxOSNotSupportedError: The current system is not supported.
+    """
+    system = platform.system()
+    try:
+        return _System(system)
+    except ValueError:
+        raise ShpyxOSNotSupportedError(f"Unsupported system: {system}") from None
+
+
+_SYSTEM = _get_system()
+
+
+if _SYSTEM != _System.WINDOWS:  # pragma: no branch, unix-only
     import fcntl
 
 
@@ -47,6 +70,26 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     runner.
     """
     return default if user is None else user
+
+
+def _get_unix_raw_cmd(cmd_str: str) -> str:
+    """
+    Wrap a shell command with the `script` Unix utility, so that its output is captured as if written to a terminal.
+    The typescript file is not needed (the output is read from the pipes), so it is discarded to `/dev/null`.
+
+    Raises:
+        ShpyxOSNotSupportedError: The `script` utility is not available on Windows.
+    """
+    match _SYSTEM:
+        case _System.LINUX:
+            # Old format: https://linux.die.net/man/1/script
+            # New format: https://man7.org/linux/man-pages/man1/script.1.html
+            return f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
+        case _System.DARWIN:
+            # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
+            return f"script -q /dev/null {cmd_str}"
+        case _System.WINDOWS:  # pragma: no branch, the match is exhaustive
+            raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM.value}")
 
 
 class _Process(subprocess.Popen[bytes]):
@@ -240,6 +283,7 @@ class Runner:
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Raises `ShpyxOSNotSupportedError` on Windows.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
                              Runner default: `None`, which uses the default decoder factory.
@@ -257,16 +301,7 @@ class Runner:
             use_shell = True
 
             if unix_raw:
-                if _SYSTEM == "Linux":  # pragma: no branch, linux-only
-                    # Old format: https://linux.die.net/man/1/script
-                    # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    # The typescript file is not needed (the output is read from the pipes), so it is discarded.
-                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
-                elif _SYSTEM == "Darwin":  # pragma: no branch, darwin-only
-                    # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
-                    args = f"script -q /dev/null {cmd_str}"
-                elif _SYSTEM == "Windows":  # pragma: no branch, windows-only
-                    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
+                args = _get_unix_raw_cmd(cmd_str)
 
         else:
             # When the arguments are a list, there is no need to use an actual shell.
@@ -316,7 +351,7 @@ class Runner:
             stderr_decoder = decoder_factory()
 
             # Make all the command outputs non-blocking, so that it can be interrupted.
-            if _SYSTEM != "Windows":  # pragma: no branch, unix-only
+            if _SYSTEM != _System.WINDOWS:  # pragma: no branch, unix-only
                 fcntl.fcntl(
                     p.stdout.fileno(),
                     fcntl.F_SETFL,
