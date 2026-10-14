@@ -127,13 +127,19 @@ class _OutputParts:
         self._stderr: list[str] = []
         self._all_output: list[str] = []
 
-    def add(self, *, stdout: str, stderr: str) -> None:
+    def add_stdout(self, data: str) -> None:
         """
-        Add decoded partial outputs, keeping `all_output` in arrival order.
+        Add decoded partial stdout output, keeping `all_output` in arrival order.
         """
-        self._stdout.append(stdout)
-        self._stderr.append(stderr)
-        self._all_output += (stdout, stderr)
+        self._stdout.append(data)
+        self._all_output.append(data)
+
+    def add_stderr(self, data: str) -> None:
+        """
+        Add decoded partial stderr output, keeping `all_output` in arrival order.
+        """
+        self._stderr.append(data)
+        self._all_output.append(data)
 
     def join(self, result: ShellCmdResult) -> None:
         """
@@ -377,9 +383,13 @@ class Runner:
             result = ShellCmdResult(cmd=cmd_str)
             output = _OutputParts()
 
-            # Create a fresh decoder per stream (they are stateful and must not be shared).
+            # The decoder and output handler of each stream, indexed by the stream ID.
+            # Each stream gets a fresh decoder (they are stateful and must not be shared).
             decoder_factory = decoder_factory or self._decoder_factory
-            decoders = (decoder_factory(), decoder_factory())
+            streams = (
+                (decoder_factory(), output.add_stdout),
+                (decoder_factory(), output.add_stderr),
+            )
 
             # Read each output stream in its own thread, so that a command blocked on one full pipe can't deadlock the
             # read of the other. The chunks are consumed here in arrival order.
@@ -387,9 +397,10 @@ class Runner:
             for stream_id, stream in enumerate((p.stdout, p.stderr)):
                 threading.Thread(target=_read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
-            open_streams = len(decoders)
+            open_streams = len(streams)
             while open_streams:
                 stream_id, chunk = chunks.get()
+                decoder, add_output = streams[stream_id]
 
                 # An empty chunk marks the end of the stream, flushing any trailing incomplete bytes.
                 final = not chunk
@@ -397,18 +408,12 @@ class Runner:
                     open_streams -= 1
 
                 # Add the partial output to the result and log it, if needed.
-                data = self._decode_output(data=chunk, decoder=decoders[stream_id], log_output=log_output, final=final)
-                output.add(
-                    stdout=data if stream_id == 0 else "",
-                    stderr=data if stream_id == 1 else "",
-                )
-
-            p.wait()
+                add_output(self._decode_output(data=chunk, decoder=decoder, log_output=log_output, final=final))
 
         # Combine all the collected output parts.
         output.join(result)
 
-        # Save return code.
+        # Save return code (the process context manager waits for the process to exit).
         result.return_code = p.returncode
 
         # Verify that the command result is valid, based on the verification configuration.

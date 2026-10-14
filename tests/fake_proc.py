@@ -14,9 +14,6 @@ class _FakeStream:
     def read(self, _size: int) -> bytes:
         return self.chunks.pop(0) if self.chunks else b""
 
-    def close(self) -> None:
-        pass
-
 
 class _FakeProc:
     """A `subprocess.Popen` stand-in that emits controlled output chunks through the stream readers."""
@@ -25,9 +22,6 @@ class _FakeProc:
         self.stdout = _FakeStream(stdout_chunks)
         self.stderr = _FakeStream(stderr_chunks)
         self.returncode = 0
-
-    def wait(self) -> int:
-        return self.returncode
 
     def __enter__(self) -> Self:
         return self
