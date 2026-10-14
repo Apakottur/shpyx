@@ -56,6 +56,11 @@ def test_echo_as_list() -> None:
     _verify_result(result, return_code=0, stdout="1\n", stderr="")
 
 
+def test_list_cmd_display() -> None:
+    """The displayed command of list arguments is shell-quoted"""
+    assert shpyx.run(["echo", "a b"]).cmd == "echo 'a b'"
+
+
 def test_pipe() -> None:
     """Test the pipe operator, making sure an actual shell is used for strings"""
     result = shpyx.run("seq 1 5 | grep '2'")

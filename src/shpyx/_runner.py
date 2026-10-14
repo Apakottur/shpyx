@@ -306,7 +306,7 @@ class Runner:
 
         else:
             # When the arguments are a list, there is no need to use an actual shell.
-            cmd_str = " ".join(args)
+            cmd_str = shlex.join(args)
             use_shell = False
 
         # Log the command, if required.
