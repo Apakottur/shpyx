@@ -298,7 +298,10 @@ class Runner:
             ShpyxInternalError: Internal error when executing the command.
         """
         # The command as a single string, used for logging and in the result.
-        cmd_str = args if isinstance(args, str) else shlex.join(args)
+        if isinstance(args, str):
+            cmd_str = args
+        else:
+            cmd_str = shlex.join(args)
 
         if unix_raw:
             # The `script` utility receives the command as a single shell string, for both string and list arguments.
