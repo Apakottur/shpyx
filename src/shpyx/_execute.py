@@ -9,9 +9,9 @@ import threading
 from typing import TYPE_CHECKING
 
 from shpyx._errors import ShpyxInternalError
-from shpyx._output import _OutputStream, _read_stream
+from shpyx._output import OutputStream, read_stream
 from shpyx._result import ShellCmdResult
-from shpyx._system import _get_unix_raw_cmd
+from shpyx._system import get_unix_raw_cmd
 from shpyx._verify import verify_result
 
 if TYPE_CHECKING:
@@ -19,13 +19,13 @@ if TYPE_CHECKING:
     from pathlib import Path
     from types import TracebackType
 
-    from shpyx._output import _DecoderFactory
+    from shpyx._output import DecoderFactory
 
 # The maximal time (in seconds) to wait for output before checking for a pending interrupt (e.g. CTRL-C).
 _INTERRUPT_CHECK_INTERVAL = 0.1
 
 
-class _Process(subprocess.Popen[bytes]):
+class Process(subprocess.Popen[bytes]):
     """Custom child process, with additional cleanup on exit."""
 
     def __exit__(
@@ -60,7 +60,7 @@ def execute(
     env: Mapping[str, str] | None,
     exec_dir: Path | str | None,
     unix_raw: bool,
-    decoder_factory: _DecoderFactory,
+    decoder_factory: DecoderFactory,
 ) -> ShellCmdResult:
     """
     Run a shell command, with a fully resolved configuration (see `Runner.run`).
@@ -78,7 +78,7 @@ def execute(
 
     if unix_raw:
         # The `script` utility receives the command as a single shell string, for both string and list arguments.
-        args = _get_unix_raw_cmd(cmd_str)
+        args = get_unix_raw_cmd(cmd_str)
 
     # A string is run through an actual shell, to support shell logic like bash piping.
     # A list is run directly, with no need for a shell.
@@ -100,7 +100,7 @@ def execute(
 
     # Initialize the subprocess object.
     try:
-        p = _Process(
+        p = Process(
             args,
             shell=use_shell,
             stdout=subprocess.PIPE,
@@ -125,14 +125,14 @@ def execute(
 
         # Create the output streams, each with a fresh decoder.
         all_output: list[str] = []
-        stdout = _OutputStream(decoder_factory(), all_output)
-        stderr = _OutputStream(decoder_factory(), all_output)
+        stdout = OutputStream(decoder_factory(), all_output)
+        stderr = OutputStream(decoder_factory(), all_output)
 
         # Read each output stream in its own thread, so that a command blocked on one full pipe can't deadlock the
         # read of the other. The chunks are consumed here in arrival order.
         chunks: queue.SimpleQueue[tuple[int, bytes]] = queue.SimpleQueue()
         for stream_id, stream in enumerate((p.stdout, p.stderr)):
-            threading.Thread(target=_read_stream, args=(stream, stream_id, chunks), daemon=True).start()
+            threading.Thread(target=read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
         streams = (stdout, stderr)
         open_streams = len(streams)
