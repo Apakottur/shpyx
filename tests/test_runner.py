@@ -22,7 +22,7 @@ import pytest
 import pytest_mock
 
 import shpyx
-from shpyx._runner import _Process
+from shpyx._runner import _get_system, _get_unix_raw_cmd, _Process, _System
 
 # Platform OS.
 _SYSTEM = platform.system()
@@ -329,6 +329,32 @@ def test_unix_raw_enabled() -> None:
     )
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
+
+
+@pytest.mark.parametrize(
+    ("system", "expected"),
+    [
+        (_System.LINUX, "script --return --quiet --command 'echo 1' /dev/null"),
+        (_System.DARWIN, "script -q /dev/null echo 1"),
+    ],
+)
+def test_unix_raw_cmd(mocker: pytest_mock.MockerFixture, system: _System, expected: str) -> None:
+    """Test the `script` command built for `unix_raw`, on every supported platform."""
+    mocker.patch("shpyx._runner._SYSTEM", system)
+    assert _get_unix_raw_cmd("echo 1") == expected
+
+
+def test_unix_raw_windows(mocker: pytest_mock.MockerFixture) -> None:
+    """`unix_raw` raises on Windows, which has no `script` utility."""
+    mocker.patch("shpyx._runner._SYSTEM", _System.WINDOWS)
+    with pytest.raises(shpyx.ShpyxOSNotSupportedError, match="Unsupported system: Windows"):
+        shpyx.run("echo 1", unix_raw=True)
+
+
+def test_unsupported_system(mocker: pytest_mock.MockerFixture) -> None:
+    mocker.patch("shpyx._runner.platform.system", return_value="FreeBSD")
+    with pytest.raises(shpyx.ShpyxOSNotSupportedError, match="Unsupported system: FreeBSD"):
+        _get_system()
 
 
 def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:
