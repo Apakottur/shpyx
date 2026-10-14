@@ -90,7 +90,7 @@ args = ["--config-file", "./linters/yamllint.yaml"]
 ##########
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.16.10"
+rev = "v0.17.0"
 
 [[repos.hooks]]
 id = "ruff-check"
