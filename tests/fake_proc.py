@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Self
+
 import pytest_mock
 
 
@@ -31,6 +35,12 @@ class _FakeProc:
 
     def communicate(self) -> tuple[bytes, bytes]:
         return b"", b""
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        pass
 
 
 def patch_fake_proc(
