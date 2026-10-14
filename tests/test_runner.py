@@ -8,7 +8,9 @@ import codecs
 import platform
 import signal
 import subprocess
+import sys
 import tempfile
+import threading
 from enum import Enum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -345,3 +347,20 @@ def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> No
 
     result = shpyx.run("dummy_cmd", decoder_factory=_AppendADecoder)
     assert result.stdout == "haia"
+
+
+def test_large_stderr_before_stdout() -> None:
+    """
+    A command filling the stderr pipe before writing to (and closing) stdout must not deadlock.
+    """
+    size = 200_000
+    code = f"import sys; sys.stderr.write('e' * {size}); sys.stderr.flush(); sys.stdout.write('o' * {size})"
+    results: list[shpyx.ShellCmdResult] = []
+
+    # Run in a thread, so that a deadlock fails the test instead of hanging it.
+    thread = threading.Thread(target=lambda: results.append(shpyx.run([sys.executable, "-c", code])), daemon=True)
+    thread.start()
+    thread.join(timeout=60)
+    assert not thread.is_alive(), "The command deadlocked"
+
+    _verify_result(results[0], stdout="o" * size, stderr="e" * size)
