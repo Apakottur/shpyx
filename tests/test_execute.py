@@ -118,6 +118,37 @@ def test_descendants_killed_on_exception(args: str | list[str]) -> None:
         psutil.Process(int(output)).wait(timeout=10)
 
 
+def test_descendants_lookup_failure_keeps_original_exception(mocker: pytest_mock.MockerFixture) -> None:
+    """A failure to look up the descendants must not hide the original exception, and the child is still killed"""
+    mocker.patch("psutil.Process", side_effect=psutil.AccessDenied())
+    kill = mocker.spy(Process, "kill")
+
+    class _FailingDecoder(codecs.IncrementalDecoder):
+        def decode(self, input: ReadableBuffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
+            raise ValueError("Decoding failed")
+
+    with pytest.raises(ValueError, match="Decoding failed"):
+        shpyx.run([sys.executable, "-c", "print(1)"], decoder_factory=_FailingDecoder)
+
+    kill.assert_called_once()
+
+
+def test_descendant_kill_failure_keeps_original_exception(mocker: pytest_mock.MockerFixture) -> None:
+    """A failure to kill a descendant must not hide the original exception"""
+    descendant = mocker.Mock(spec=psutil.Process)
+    descendant.kill.side_effect = psutil.AccessDenied()
+    mocker.patch("psutil.Process.children", return_value=[descendant])
+
+    class _FailingDecoder(codecs.IncrementalDecoder):
+        def decode(self, input: ReadableBuffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
+            raise ValueError("Decoding failed")
+
+    with pytest.raises(ValueError, match="Decoding failed"):
+        shpyx.run([sys.executable, "-c", "print(1)"], decoder_factory=_FailingDecoder)
+
+    descendant.kill.assert_called_once()
+
+
 def test_interrupt_while_waiting_for_output() -> None:
     """A `KeyboardInterrupt` (e.g. CTRL-C) must stop a command promptly, even while no output arrives"""
     # Interrupt the main thread while it waits for the output of a silent long-running command.
