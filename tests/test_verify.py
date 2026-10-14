@@ -53,6 +53,12 @@ def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
     assert (cap_stdout, cap_stderr) == (output_by_platform[SYSTEM], "")
 
 
+def test_verify_stderr_enabled_no_stderr() -> None:
+    """When enabled, a command that writes nothing to STDERR should not trigger an error."""
+    result = shpyx.run("exit 0", verify_stderr=True)
+    verify_result(result, return_code=0, stdout="")
+
+
 def test_verify_return_code_disabled() -> None:
     """When disabled, a non-zero return code should not trigger an error"""
     result = shpyx.run("exit 33", verify_return_code=False)
