@@ -5,12 +5,15 @@ Test the command execution.
 from __future__ import annotations
 
 import _thread
+import codecs
+import contextlib
 import sys
 import threading
 import time
 from enum import Enum, auto
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import psutil
 import pytest
 import pytest_mock
 
@@ -18,6 +21,9 @@ import shpyx
 from shpyx._execute import Process
 from shpyx._output import OutputStream
 from tests.utils import verify_result
+
+if TYPE_CHECKING:
+    from _typeshed import ReadableBuffer
 
 
 class _SubprocessPopenIssue(Enum):
@@ -71,6 +77,45 @@ def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
 
     proc: Process = exit_spy.call_args.args[0]
     assert proc.returncode is not None
+
+
+# Print the PID of a process, then keep it running.
+_PRINT_PID_AND_SLEEP = "import os, time; print(os.getpid(), flush=True); time.sleep(30)"
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        # A shell pipeline, where the process printing the PID is a child of the shell.
+        f'"{sys.executable}" -c "{_PRINT_PID_AND_SLEEP}" | "{sys.executable}" -c "import sys; '
+        "[print(line, end='', flush=True) for line in sys.stdin]\"",
+        # A process printing the PID of its own child, and waiting for it.
+        [
+            sys.executable,
+            "-c",
+            f"import subprocess, sys; subprocess.run([sys.executable, '-c', {_PRINT_PID_AND_SLEEP!r}])",
+        ],
+    ],
+)
+def test_descendants_killed_on_exception(args: str | list[str]) -> None:
+    """An exception raised mid-run must kill the descendants of the child process as well, not only the child"""
+    output = bytearray()
+
+    class _FailingDecoder(codecs.IncrementalDecoder):
+        # Collect the output, and fail once a full line (the PID of a grandchild process) arrived.
+
+        def decode(self, input: ReadableBuffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
+            output.extend(bytes(input))
+            if b"\n" in output:
+                raise ValueError("Decoding failed")
+            return ""
+
+    with pytest.raises(ValueError, match="Decoding failed"):
+        shpyx.run(args, decoder_factory=_FailingDecoder)
+
+    # The grandchild is killed asynchronously, so wait for it to exit (raises on a timeout).
+    with contextlib.suppress(psutil.NoSuchProcess):
+        psutil.Process(int(output)).wait(timeout=10)
 
 
 def test_interrupt_while_waiting_for_output() -> None:

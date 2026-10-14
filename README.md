@@ -159,7 +159,8 @@ The output streams (stdout and stderr) are each read by a dedicated thread, and 
 see `decoder_factory`, typed as `shpyx.DecoderFactory`) as the output arrives. This allows logging the live output, keeps
 the order of the combined output (`all_output`), and avoids deadlocks when a command fills one pipe while `shpyx` waits on
 the other.
-A `KeyboardInterrupt` (CTRL-C) stops the run promptly and kills the subprocess.
+A `KeyboardInterrupt` (CTRL-C), or any other exception raised during the run, stops it promptly and kills the subprocess
+along with all of its descendants (e.g. every command of a shell pipeline).
 
 `shpyx` supports Linux, macOS and Windows. Other systems (e.g. FreeBSD) are treated as generic POSIX systems: `run` works
 as usual, but `unix_raw` raises `ShpyxOSNotSupportedError`.

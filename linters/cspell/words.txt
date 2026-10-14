@@ -39,3 +39,5 @@ httpx
 prek
 maxfail
 commitish
+psutil
+getpid
