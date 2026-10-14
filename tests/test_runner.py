@@ -335,7 +335,7 @@ def test_unix_raw_enabled() -> None:
     ("system", "expected"),
     [
         (_System.LINUX, "script --return --quiet --command 'echo 1' /dev/null"),
-        (_System.DARWIN, "script -q /dev/null echo 1"),
+        (_System.DARWIN, "script -q /dev/null /bin/sh -c 'echo 1'"),
     ],
 )
 def test_unix_raw_cmd(mocker: pytest_mock.MockerFixture, system: _System, expected: str) -> None:
