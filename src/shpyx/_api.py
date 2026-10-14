@@ -105,7 +105,7 @@ class Runner:
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
                       Supported for both string and list arguments; the command is always run through a shell.
-                      Raises `ShpyxOSNotSupportedError` on Windows.
+                      Supported on Linux and macOS, raises `ShpyxOSNotSupportedError` on any other system.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
                              Runner default: `None`, which uses the default decoder factory.

@@ -6,25 +6,22 @@ from shpyx._errors import ShpyxOSNotSupportedError
 
 
 class _System(Enum):
-    """The platform systems supported by shpyx, used for platform specific code."""
+    """The platform systems with specific support in shpyx, used for platform specific code."""
 
     LINUX = "Linux"
     DARWIN = "Darwin"
     WINDOWS = "Windows"
 
 
-def _get_system() -> _System:
+def _get_system() -> _System | None:
     """
-    Get the current platform system.
-
-    Raises:
-        ShpyxOSNotSupportedError: The current system is not supported.
+    Get the current platform system, or `None` for a system without specific support (e.g. FreeBSD).
+    Such systems are treated as generic POSIX systems, with platform specific features (like `unix_raw`) unavailable.
     """
-    system = platform.system()
     try:
-        return _System(system)
+        return _System(platform.system())
     except ValueError:
-        raise ShpyxOSNotSupportedError(f"Unsupported system: {system}") from None
+        return None
 
 
 _SYSTEM = _get_system()
@@ -36,7 +33,8 @@ def _get_unix_raw_cmd(cmd_str: str) -> str:
     The typescript file is not needed (the output is read from the pipes), so it is discarded to `/dev/null`.
 
     Raises:
-        ShpyxOSNotSupportedError: The `script` utility is not available on Windows.
+        ShpyxOSNotSupportedError: The `script` utility is not available (Windows) or its format is unknown (systems
+                                  without specific support).
     """
     match _SYSTEM:
         case _System.LINUX:
@@ -47,5 +45,5 @@ def _get_unix_raw_cmd(cmd_str: str) -> str:
             # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
             # The command is executed directly (not through a shell), so wrap it with `sh -c` to support shell logic.
             return f"script -q /dev/null /bin/sh -c {shlex.quote(cmd_str)}"
-        case _System.WINDOWS:  # pragma: no branch, the match is exhaustive
-            raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM.value}")
+        case _:
+            raise ShpyxOSNotSupportedError(f"Unsupported system: {platform.system()}")

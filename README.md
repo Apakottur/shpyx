@@ -146,7 +146,8 @@ The following arguments are supported by `run`:
 `shpyx` is a wrapper around the excellent [subprocess](https://docs.python.org/3/library/subprocess.html) module, aiming
 to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
 
-`shpyx` supports Linux, macOS and Windows. Importing it on any other system raises `ShpyxOSNotSupportedError`.
+`shpyx` supports Linux, macOS and Windows. Other systems (e.g. FreeBSD) are treated as generic POSIX systems: `run` works
+as usual, but `unix_raw` raises `ShpyxOSNotSupportedError`.
 
 While the core API logic is fully supported on all of them, there is some OS specific code for minor quality-of-life
 improvements.
