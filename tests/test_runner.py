@@ -9,6 +9,7 @@ import platform
 import signal
 import sys
 import tempfile
+import threading
 from enum import Enum, auto
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -22,7 +23,7 @@ import pytest
 import pytest_mock
 
 import shpyx
-from shpyx._runner import _get_system, _get_unix_raw_cmd, _Process, _System
+from shpyx._runner import _get_system, _get_unix_raw_cmd, _OutputStream, _Process, _System
 
 # Platform OS.
 _SYSTEM = platform.system()
@@ -222,10 +223,11 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
 def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
     """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
     exit_spy = mocker.spy(_Process, "__exit__")
-    mocker.patch("shpyx._runner.time.sleep", side_effect=KeyboardInterrupt)
+    mocker.patch.object(_OutputStream, "add", side_effect=KeyboardInterrupt)
 
+    # A long-running command, with some output to trigger the interrupt.
     with pytest.raises(KeyboardInterrupt):
-        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+        shpyx.run([sys.executable, "-c", "import time; print(1, flush=True); time.sleep(30)"])
 
     proc: _Process = exit_spy.call_args.args[0]
     assert proc.returncode is not None
@@ -400,3 +402,20 @@ def test_output_decoding_custom_decoder(mocker: pytest_mock.MockerFixture) -> No
 
     result = shpyx.run("dummy_cmd", decoder_factory=_AppendADecoder)
     assert result.stdout == "haia"
+
+
+def test_large_stderr_before_stdout() -> None:
+    """
+    A command filling the stderr pipe before writing to (and closing) stdout must not deadlock.
+    """
+    size = 200_000
+    code = f"import sys; sys.stderr.write('e' * {size}); sys.stderr.flush(); sys.stdout.write('o' * {size})"
+    results: list[shpyx.ShellCmdResult] = []
+
+    # Run in a thread, so that a deadlock fails the test instead of hanging it.
+    thread = threading.Thread(target=lambda: results.append(shpyx.run([sys.executable, "-c", code])), daemon=True)
+    thread.start()
+    thread.join(timeout=60)
+    assert not thread.is_alive(), "The command deadlocked"
+
+    _verify_result(results[0], stdout="o" * size, stderr="e" * size)

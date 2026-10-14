@@ -3,14 +3,15 @@ from __future__ import annotations
 import codecs
 import os
 import platform
+import queue
 import shlex
 import signal
 import subprocess
 import sys
-import time
+import threading
 from collections.abc import Callable
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import IO, TYPE_CHECKING
 
 from shpyx._errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
 from shpyx._result import ShellCmdResult
@@ -45,10 +46,6 @@ def _get_system() -> _System:
 _SYSTEM = _get_system()
 
 
-if _SYSTEM != _System.WINDOWS:  # pragma: no branch, unix-only
-    import fcntl
-
-
 # A callable that returns a fresh incremental decoder for a single command output stream.
 _DecoderFactory = Callable[[], codecs.IncrementalDecoder]
 
@@ -70,6 +67,17 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     runner.
     """
     return default if user is None else user
+
+
+def _read_stream(stream: IO[bytes], stream_id: int, chunks: queue.SimpleQueue[tuple[int, bytes]]) -> None:
+    """
+    Read an output stream until EOF, pushing each chunk to a shared queue, followed by an empty chunk.
+    """
+    try:
+        while chunk := stream.read(64 * 1024):
+            chunks.put((stream_id, chunk))
+    finally:
+        chunks.put((stream_id, b""))
 
 
 def _get_unix_raw_cmd(cmd_str: str) -> str:
@@ -125,7 +133,7 @@ class _OutputStream:
         self._parts: list[str] = []
         self._all_output = all_output
 
-    def add(self, data: bytes | None, *, final: bool) -> str:
+    def add(self, data: bytes, *, final: bool) -> str:
         """
         Decode a partial output chunk and collect it.
 
@@ -136,7 +144,7 @@ class _OutputStream:
         Returns:
             The decoded output (possibly empty).
         """
-        decoded_data = self._decoder.decode(data or b"", final)
+        decoded_data = self._decoder.decode(data, final)
         self._parts.append(decoded_data)
         self._all_output.append(decoded_data)
         return decoded_data
@@ -348,6 +356,8 @@ class Runner:
                 shell=use_shell,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                # Unbuffered, so that each read returns as soon as any data is available.
+                bufsize=0,
                 env=cmd_env,
                 cwd=exec_dir,
             )
@@ -370,42 +380,31 @@ class Runner:
             stdout = _OutputStream(decoder_factory(), all_output)
             stderr = _OutputStream(decoder_factory(), all_output)
 
-            # Make all the command outputs non-blocking, so that it can be interrupted.
-            if _SYSTEM != _System.WINDOWS:  # pragma: no branch, unix-only
-                fcntl.fcntl(
-                    p.stdout.fileno(),
-                    fcntl.F_SETFL,
-                    fcntl.fcntl(p.stdout.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-                )
-                fcntl.fcntl(
-                    p.stderr.fileno(),
-                    fcntl.F_SETFL,
-                    fcntl.fcntl(p.stderr.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK,
-                )
+            # Read each output stream in its own thread, so that a command blocked on one full pipe can't deadlock the
+            # read of the other. The chunks are consumed here in arrival order.
+            chunks: queue.SimpleQueue[tuple[int, bytes]] = queue.SimpleQueue()
+            for stream_id, stream in enumerate((p.stdout, p.stderr)):
+                threading.Thread(target=_read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
-            # Run the command in a subprocess, periodically checking for outputs.
-            while p.poll() is None:
-                # Poll both outputs for any new data.
-                stdout_data = p.stdout.read()
-                stderr_data = p.stderr.read()
+            streams = (stdout, stderr)
+            open_streams = len(streams)
+            while open_streams:
+                stream_id, chunk = chunks.get()
 
-                # Add partial outputs to result and log them, if needed.
-                self._log_chunk(stdout.add(stdout_data, final=False), log_output=log_output)
-                self._log_chunk(stderr.add(stderr_data, final=False), log_output=log_output)
+                # An empty chunk marks the end of the stream, flushing any trailing incomplete bytes.
+                final = not chunk
+                if final:
+                    open_streams -= 1
 
-                time.sleep(0.01)
-
-            # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
-            final_stdout, final_stderr = p.communicate()
-            self._log_chunk(stdout.add(final_stdout, final=True), log_output=log_output)
-            self._log_chunk(stderr.add(final_stderr, final=True), log_output=log_output)
+                # Add the partial output to the result and log it, if needed.
+                self._log_chunk(streams[stream_id].add(chunk, final=final), log_output=log_output)
 
         # Combine all the collected output parts.
         result.stdout = stdout.text()
         result.stderr = stderr.text()
         result.all_output = "".join(all_output)
 
-        # Save return code.
+        # Save return code (the process context manager waits for the process to exit).
         result.return_code = p.returncode
 
         # Verify that the command result is valid, based on the verification configuration.
