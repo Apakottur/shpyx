@@ -4,8 +4,12 @@ Test the public API, `shpyx.run` and `shpyx.Runner`.
 
 from __future__ import annotations
 
+import os
+import shlex
+import sys
 import tempfile
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 
@@ -23,6 +27,14 @@ def test_echo_as_list() -> None:
     """Simple use case when input is a list"""
     result = shpyx.run(["echo", "1"])
     verify_result(result, return_code=0, stdout="1\n", stderr="")
+
+
+def test_args_sequence_with_paths() -> None:
+    """Arguments can be any sequence of strings and paths"""
+    args = (Path(sys.executable), "-c", "print(1)")
+    result = shpyx.run(args)
+    verify_result(result, return_code=0, stdout=f"1{SEP}", stderr="")
+    assert result.cmd == shlex.join([os.fspath(args[0]), "-c", "print(1)"])
 
 
 def test_list_cmd_display() -> None:
@@ -85,6 +97,10 @@ def test_env() -> None:
 
     result = shpyx.run(cmd, env={"MY_VAR": "10"})
     verify_result(result, return_code=0, stdout=f"10{SEP}", stderr="")
+
+    # Any mapping is supported.
+    result = shpyx.run(cmd, env=MappingProxyType({"MY_VAR": "20"}))
+    verify_result(result, return_code=0, stdout=f"20{SEP}", stderr="")
 
 
 def test_exec_dir() -> None:

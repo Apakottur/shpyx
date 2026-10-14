@@ -30,6 +30,7 @@ classmethod
 pythonpath
 nonblock
 pathlib
+fspath
 anyio
 multibyte
 haia
