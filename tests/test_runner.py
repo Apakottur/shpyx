@@ -222,10 +222,16 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
 def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
     """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
     exit_spy = mocker.spy(_Process, "__exit__")
-    mocker.patch("shpyx._runner.time.sleep", side_effect=KeyboardInterrupt)
 
+    class _InterruptingDecoder(codecs.IncrementalDecoder):
+        # Simulate an interrupt while the command output is being processed.
+        def decode(self, input: ReadableBuffer, final: bool = False) -> str:  # noqa: A002, FBT001, FBT002, ARG002
+            raise KeyboardInterrupt
+
+    # The command writes some output (to be processed), and then keeps running.
+    code = "import sys, time; print('hi', flush=True); time.sleep(30)"
     with pytest.raises(KeyboardInterrupt):
-        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+        shpyx.run([sys.executable, "-c", code], decoder_factory=_InterruptingDecoder)
 
     proc: _Process = exit_spy.call_args.args[0]
     assert proc.returncode is not None
