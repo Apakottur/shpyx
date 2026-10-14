@@ -48,7 +48,7 @@ class Runner:
             log_output: Whether to log the live output of the command (while it is being executed).
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
-            use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
+            use_signal_names:  Whether to log the name of the signal that killed the command (negative return code),
                                in case of result verification failure.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
         """
@@ -94,7 +94,7 @@ class Runner:
                                 Runner default: `True`.
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
                            Runner default: `False`.
-            use_signal_names:  Whether to log the name of the signal corresponding to a non-zero error code,
+            use_signal_names:  Whether to log the name of the signal that killed the command (negative return code),
                                in case of result verification failure.
                                Runner default: `True`.
 

@@ -18,10 +18,10 @@ class _FakeStream:
 class _FakeProc:
     """A `subprocess.Popen` stand-in that emits controlled output chunks through the stream readers."""
 
-    def __init__(self, stdout_chunks: list[bytes], stderr_chunks: list[bytes]) -> None:
+    def __init__(self, stdout_chunks: list[bytes], stderr_chunks: list[bytes], returncode: int) -> None:
         self.stdout = _FakeStream(stdout_chunks)
         self.stderr = _FakeStream(stderr_chunks)
-        self.returncode = 0
+        self.returncode = returncode
 
     def __enter__(self) -> Self:
         return self
@@ -35,6 +35,7 @@ def patch_fake_proc(
     *,
     stdout_chunks: list[bytes],
     stderr_chunks: list[bytes],
+    returncode: int = 0,
 ) -> None:
-    proc = _FakeProc(stdout_chunks, stderr_chunks or [])
+    proc = _FakeProc(stdout_chunks, stderr_chunks or [], returncode)
     mocker.patch("shpyx._execute._Process", return_value=proc)

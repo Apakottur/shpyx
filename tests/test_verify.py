@@ -7,8 +7,10 @@ from __future__ import annotations
 import signal
 
 import pytest
+import pytest_mock
 
 import shpyx
+from tests.fake_proc import patch_fake_proc
 from tests.utils import SYSTEM, verify_result
 
 
@@ -57,42 +59,28 @@ def test_verify_return_code_disabled() -> None:
     verify_result(result, return_code=33, stdout="")
 
 
-def test_signal_names_enabled() -> None:
-    signal_id = signal.Signals.SIGINT
-    signal_name: str = signal.Signals(signal_id).name
-
-    cmd = f"exit {signal_id}"
+@pytest.mark.parametrize(
+    ("return_code", "expected"),
+    [
+        # Killed by a signal.
+        (-signal.SIGTERM, f"{-signal.SIGTERM} (SIGTERM)"),
+        # Killed by a signal with an unknown name (not registered in the signal module).
+        (-101, "-101"),
+        # A regular exit code is not a signal, even if it matches a signal number.
+        (signal.SIGTERM, f"{signal.SIGTERM}"),
+    ],
+)
+def test_signal_names(mocker: pytest_mock.MockerFixture, return_code: int, expected: str) -> None:
+    patch_fake_proc(mocker, stdout_chunks=[], stderr_chunks=[], returncode=return_code)
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        shpyx.run(cmd)
+        shpyx.run("cmd")
 
-    assert (
-        exc.value.reason == f"The command '{cmd}' failed with return code {signal_id} ({signal_name})."
-        f"\n\nError output:\n\nAll output:\n"
-    )
+    assert exc.value.reason.startswith(f"The command 'cmd' failed with return code {expected}.\n")
 
 
-def test_signal_names_enabled_name_unknown() -> None:
-    """Handle a single with an unknown name (not registered in the signal module)"""
-    signal_id = 101
-
-    cmd = f"exit {signal_id}"
+def test_signal_names_disabled(mocker: pytest_mock.MockerFixture) -> None:
+    patch_fake_proc(mocker, stdout_chunks=[], stderr_chunks=[], returncode=-signal.SIGTERM)
     with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        shpyx.run(cmd, use_signal_names=True)
+        shpyx.Runner(use_signal_names=False).run("cmd")
 
-    assert (
-        exc.value.reason == f"The command '{cmd}' failed with return code {signal_id}."
-        f"\n\nError output:\n\nAll output:\n"
-    )
-
-
-def test_signal_names_disabled() -> None:
-    signal_id = signal.Signals.SIGINT
-
-    cmd = f"exit {signal_id}"
-    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
-        shpyx.Runner(use_signal_names=False).run(cmd)
-
-    assert (
-        exc.value.reason == f"The command '{cmd}' failed with return code {signal_id}."
-        f"\n\nError output:\n\nAll output:\n"
-    )
+    assert exc.value.reason.startswith(f"The command 'cmd' failed with return code {-signal.SIGTERM}.\n")
