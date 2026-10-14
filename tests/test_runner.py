@@ -7,7 +7,7 @@ from __future__ import annotations
 import codecs
 import platform
 import signal
-import subprocess
+import sys
 import tempfile
 from enum import Enum, auto
 from pathlib import Path
@@ -22,6 +22,7 @@ import pytest
 import pytest_mock
 
 import shpyx
+from shpyx._runner import _Process
 
 # Platform OS.
 _SYSTEM = platform.system()
@@ -179,24 +180,27 @@ class _SubprocessPopenIssue(Enum):
     STDERR_PIPE_MISSING = auto()
 
 
+class _NoStdoutProcess(_Process):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.stdout = None
+
+
+class _NoStderrProcess(_Process):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.stderr = None
+
+
 @pytest.mark.parametrize("issue", _SubprocessPopenIssue)
 def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue: _SubprocessPopenIssue) -> None:
-    orig = subprocess.Popen
-
-    def _popen(*args: Any, **kwargs: Any) -> Any:
-        match issue:
-            case _SubprocessPopenIssue.CRASH:
-                raise OSError("Some SO error")
-            case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
-                p = orig(*args, **kwargs)
-                p.stdout = None
-                return p
-            case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
-                p = orig(*args, **kwargs)
-                p.stderr = None
-                return p
-
-    mocker.patch("shpyx._runner.subprocess.Popen", _popen)
+    match issue:
+        case _SubprocessPopenIssue.CRASH:
+            mocker.patch("shpyx._runner._Process", side_effect=OSError("Some SO error"))
+        case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
+            mocker.patch("shpyx._runner._Process", _NoStdoutProcess)
+        case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
+            mocker.patch("shpyx._runner._Process", _NoStderrProcess)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
@@ -208,6 +212,18 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
             assert str(exc.value) == "Failed to initialize subprocess (stdout pipe)"
         case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
             assert str(exc.value) == "Failed to initialize subprocess (stderr pipe)"
+
+
+def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
+    """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
+    exit_spy = mocker.spy(_Process, "__exit__")
+    mocker.patch("shpyx._runner.time.sleep", side_effect=KeyboardInterrupt)
+
+    with pytest.raises(KeyboardInterrupt):
+        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+
+    proc: _Process = exit_spy.call_args.args[0]
+    assert proc.returncode is not None
 
 
 def test_signal_names_enabled() -> None:

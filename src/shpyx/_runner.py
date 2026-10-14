@@ -16,6 +16,7 @@ from shpyx._result import ShellCmdResult
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from types import TracebackType
 
 """The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
 _SYSTEM = platform.system()
@@ -46,6 +47,22 @@ def _is_action_required(*, user: bool | None, default: bool) -> bool:
     runner.
     """
     return default if user is None else user
+
+
+class _Process(subprocess.Popen[bytes]):
+    """Custom child process, with additional cleanup on exit."""
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        # On an exception (including `KeyboardInterrupt`), kill the child process instead of waiting for it to finish.
+        if exc_type is not None:
+            self.kill()
+            self.wait()
+        super().__exit__(exc_type, value, traceback)
 
 
 class Runner:
@@ -272,7 +289,7 @@ class Runner:
 
         # Initialize the subprocess object.
         try:
-            p = subprocess.Popen(  # noqa: S603
+            p = _Process(
                 args,
                 shell=use_shell,
                 stdout=subprocess.PIPE,
