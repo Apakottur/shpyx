@@ -8,10 +8,10 @@ if TYPE_CHECKING:
     import queue
 
 # A callable that returns a fresh incremental decoder for a single command output stream.
-_DecoderFactory = Callable[[], codecs.IncrementalDecoder]
+DecoderFactory = Callable[[], codecs.IncrementalDecoder]
 
 
-def _default_decoder_factory() -> codecs.IncrementalDecoder:
+def default_decoder_factory() -> codecs.IncrementalDecoder:
     """
     Get the default output decoder factory:
         1. Decodes incrementally, so a valid multibyte character split across two reads (which are not aligned to
@@ -22,7 +22,7 @@ def _default_decoder_factory() -> codecs.IncrementalDecoder:
     return codecs.getincrementaldecoder("utf-8")(errors="replace")
 
 
-def _read_stream(stream: IO[bytes], stream_id: int, chunks: queue.SimpleQueue[tuple[int, bytes]]) -> None:
+def read_stream(stream: IO[bytes], stream_id: int, chunks: queue.SimpleQueue[tuple[int, bytes]]) -> None:
     """
     Read an output stream until EOF, pushing each chunk to a shared queue, followed by an empty chunk.
     """
@@ -33,7 +33,7 @@ def _read_stream(stream: IO[bytes], stream_id: int, chunks: queue.SimpleQueue[tu
         chunks.put((stream_id, b""))
 
 
-class _OutputStream:
+class OutputStream:
     """
     A single output stream of a command (stdout or stderr), decoded and collected in parts while the command runs.
     The parts are joined once the command exits (for performance).

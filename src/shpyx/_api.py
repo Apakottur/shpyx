@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from shpyx._execute import execute
-from shpyx._output import _default_decoder_factory
+from shpyx._output import default_decoder_factory
 
 if TYPE_CHECKING:
     import os
     from collections.abc import Mapping, Sequence
     from pathlib import Path
 
-    from shpyx._output import _DecoderFactory
+    from shpyx._output import DecoderFactory
     from shpyx._result import ShellCmdResult
 
 
@@ -35,7 +35,7 @@ class Runner:
         verify_return_code: bool = True,
         verify_stderr: bool = False,
         use_signal_names: bool = True,
-        decoder_factory: _DecoderFactory = _default_decoder_factory,
+        decoder_factory: DecoderFactory = default_decoder_factory,
     ) -> None:
         """
         Create a command runner.
@@ -73,7 +73,7 @@ class Runner:
         env: Mapping[str, str] | None = None,
         exec_dir: Path | str | None = None,
         unix_raw: bool = False,
-        decoder_factory: _DecoderFactory | None = None,
+        decoder_factory: DecoderFactory | None = None,
     ) -> ShellCmdResult:
         """
         Run a shell command.

@@ -38,4 +38,4 @@ def patch_fake_proc(
     returncode: int = 0,
 ) -> None:
     proc = _FakeProc(stdout_chunks, stderr_chunks or [], returncode)
-    mocker.patch("shpyx._execute._Process", return_value=proc)
+    mocker.patch("shpyx._execute.Process", return_value=proc)

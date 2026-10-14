@@ -15,8 +15,8 @@ import pytest
 import pytest_mock
 
 import shpyx
-from shpyx._execute import _Process
-from shpyx._output import _OutputStream
+from shpyx._execute import Process
+from shpyx._output import OutputStream
 from tests.utils import verify_result
 
 
@@ -26,13 +26,13 @@ class _SubprocessPopenIssue(Enum):
     STDERR_PIPE_MISSING = auto()
 
 
-class _NoStdoutProcess(_Process):
+class _NoStdoutProcess(Process):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.stdout = None
 
 
-class _NoStderrProcess(_Process):
+class _NoStderrProcess(Process):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.stderr = None
@@ -42,11 +42,11 @@ class _NoStderrProcess(_Process):
 def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue: _SubprocessPopenIssue) -> None:
     match issue:
         case _SubprocessPopenIssue.CRASH:
-            mocker.patch("shpyx._execute._Process", side_effect=OSError("Some SO error"))
+            mocker.patch("shpyx._execute.Process", side_effect=OSError("Some SO error"))
         case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
-            mocker.patch("shpyx._execute._Process", _NoStdoutProcess)
+            mocker.patch("shpyx._execute.Process", _NoStdoutProcess)
         case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
-            mocker.patch("shpyx._execute._Process", _NoStderrProcess)
+            mocker.patch("shpyx._execute.Process", _NoStderrProcess)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
@@ -62,14 +62,14 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
 
 def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
     """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
-    exit_spy = mocker.spy(_Process, "__exit__")
-    mocker.patch.object(_OutputStream, "add", side_effect=KeyboardInterrupt)
+    exit_spy = mocker.spy(Process, "__exit__")
+    mocker.patch.object(OutputStream, "add", side_effect=KeyboardInterrupt)
 
     # A long-running command, with some output to trigger the interrupt.
     with pytest.raises(KeyboardInterrupt):
         shpyx.run([sys.executable, "-c", "import time; print(1, flush=True); time.sleep(30)"])
 
-    proc: _Process = exit_spy.call_args.args[0]
+    proc: Process = exit_spy.call_args.args[0]
     assert proc.returncode is not None
 
 

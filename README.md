@@ -156,8 +156,9 @@ The following arguments are supported by `run`:
 to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
 
 The output streams (stdout and stderr) are each read by a dedicated thread, and decoded incrementally (UTF-8 by default,
-see `decoder_factory`) as the output arrives. This allows logging the live output, keeps the order of the combined output
-(`all_output`), and avoids deadlocks when a command fills one pipe while `shpyx` waits on the other.
+see `decoder_factory`, typed as `shpyx.DecoderFactory`) as the output arrives. This allows logging the live output, keeps
+the order of the combined output (`all_output`), and avoids deadlocks when a command fills one pipe while `shpyx` waits on
+the other.
 A `KeyboardInterrupt` (CTRL-C) stops the run promptly and kills the subprocess.
 
 `shpyx` supports Linux, macOS and Windows. Other systems (e.g. FreeBSD) are treated as generic POSIX systems: `run` works
