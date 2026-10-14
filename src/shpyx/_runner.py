@@ -284,6 +284,7 @@ class Runner:
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Supported for both string and list arguments; the command is always run through a shell.
                       Raises `ShpyxOSNotSupportedError` on Windows.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
@@ -300,14 +301,15 @@ class Runner:
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
             use_shell = True
-
-            if unix_raw:
-                args = _get_unix_raw_cmd(cmd_str)
-
         else:
             # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = shlex.join(args)
             use_shell = False
+
+        if unix_raw:
+            # The `script` utility receives the command as a single shell string, for both string and list arguments.
+            args = _get_unix_raw_cmd(cmd_str)
+            use_shell = True
 
         # Log the command, if required.
         if _is_action_required(user=log_cmd, default=self._log_cmd):
