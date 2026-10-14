@@ -87,7 +87,8 @@ def _get_unix_raw_cmd(cmd_str: str) -> str:
             return f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
         case _System.DARWIN:
             # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
-            return f"script -q /dev/null {cmd_str}"
+            # The command is executed directly (not through a shell), so wrap it with `sh -c` to support shell logic.
+            return f"script -q /dev/null /bin/sh -c {shlex.quote(cmd_str)}"
         case _System.WINDOWS:  # pragma: no branch, the match is exhaustive
             raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM.value}")
 
