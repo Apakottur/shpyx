@@ -109,31 +109,43 @@ class _Process(subprocess.Popen[bytes]):
         super().__exit__(exc_type, value, traceback)
 
 
-class _OutputParts:
+class _OutputStream:
     """
-    The decoded output of a command, collected in parts while it runs and joined once it exits (for performance).
+    A single output stream of a command (stdout or stderr), decoded and collected in parts while the command runs.
+    The parts are joined once the command exits (for performance).
     """
 
-    def __init__(self) -> None:
-        self._stdout: list[str] = []
-        self._stderr: list[str] = []
-        self._all_output: list[str] = []
+    def __init__(self, decoder: codecs.IncrementalDecoder, all_output: list[str]) -> None:
+        """
+        Args:
+            decoder: The stream decoder (decoders are stateful, so each stream must have its own).
+            all_output: The parts of all the output streams, shared by all of them to keep the arrival order.
+        """
+        self._decoder = decoder
+        self._parts: list[str] = []
+        self._all_output = all_output
 
-    def add(self, *, stdout: str, stderr: str) -> None:
+    def add(self, data: bytes | None, *, final: bool) -> str:
         """
-        Add decoded partial outputs, keeping `all_output` in arrival order.
-        """
-        self._stdout.append(stdout)
-        self._stderr.append(stderr)
-        self._all_output += (stdout, stderr)
+        Decode a partial output chunk and collect it.
 
-    def join(self, result: ShellCmdResult) -> None:
+        Args:
+            data: The partial output to add.
+            final: Whether this is the last chunk, flushing any trailing incomplete bytes.
+
+        Returns:
+            The decoded output (possibly empty).
         """
-        Concatenate all the collected parts into the output fields of the result.
+        decoded_data = self._decoder.decode(data or b"", final)
+        self._parts.append(decoded_data)
+        self._all_output.append(decoded_data)
+        return decoded_data
+
+    def text(self) -> str:
         """
-        result.stdout = "".join(self._stdout)
-        result.stderr = "".join(self._stderr)
-        result.all_output = "".join(self._all_output)
+        Concatenate all the collected parts.
+        """
+        return "".join(self._parts)
 
 
 class Runner:
@@ -181,30 +193,16 @@ class Runner:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-    def _decode_output(
-        self,
-        *,
-        data: bytes | None,
-        log_output: bool | None,
-        decoder: codecs.IncrementalDecoder,
-        final: bool,
-    ) -> str:
+    def _log_chunk(self, data: str, *, log_output: bool | None) -> None:
         """
-        Decode a partial output chunk of a single stream, and log it if required.
+        Log a partial output chunk, if required.
 
         Args:
-            data: The partial output to decode.
+            data: The decoded partial output.
             log_output: Whether to log the output, as supplied to `.run`.
-            decoder: Stream decoder.
-            final: Whether this is the last chunk, flushing any trailing incomplete bytes.
-
-        Returns:
-            The decoded output (possibly empty).
         """
-        decoded_data = decoder.decode(data or b"", final)
-        if decoded_data and _is_action_required(user=log_output, default=self._log_output):
-            self._log(decoded_data)
-        return decoded_data
+        if data and _is_action_required(user=log_output, default=self._log_output):
+            self._log(data)
 
     def _verify_result(
         self,
@@ -365,12 +363,12 @@ class Runner:
 
             # Initialize the result object.
             result = ShellCmdResult(cmd=cmd_str)
-            output = _OutputParts()
 
-            # Create a fresh decoder per stream (they are stateful and must not be shared).
+            # Create the output streams, each with a fresh decoder.
             decoder_factory = decoder_factory or self._decoder_factory
-            stdout_decoder = decoder_factory()
-            stderr_decoder = decoder_factory()
+            all_output: list[str] = []
+            stdout = _OutputStream(decoder_factory(), all_output)
+            stderr = _OutputStream(decoder_factory(), all_output)
 
             # Make all the command outputs non-blocking, so that it can be interrupted.
             if _SYSTEM != _System.WINDOWS:  # pragma: no branch, unix-only
@@ -392,30 +390,20 @@ class Runner:
                 stderr_data = p.stderr.read()
 
                 # Add partial outputs to result and log them, if needed.
-                output.add(
-                    stdout=self._decode_output(
-                        data=stdout_data, decoder=stdout_decoder, log_output=log_output, final=False
-                    ),
-                    stderr=self._decode_output(
-                        data=stderr_data, decoder=stderr_decoder, log_output=log_output, final=False
-                    ),
-                )
+                self._log_chunk(stdout.add(stdout_data, final=False), log_output=log_output)
+                self._log_chunk(stderr.add(stderr_data, final=False), log_output=log_output)
 
                 time.sleep(0.01)
 
             # Get the remaining outputs and add them to the result, flushing any trailing incomplete bytes.
             final_stdout, final_stderr = p.communicate()
-            output.add(
-                stdout=self._decode_output(
-                    data=final_stdout, decoder=stdout_decoder, log_output=log_output, final=True
-                ),
-                stderr=self._decode_output(
-                    data=final_stderr, decoder=stderr_decoder, log_output=log_output, final=True
-                ),
-            )
+            self._log_chunk(stdout.add(final_stdout, final=True), log_output=log_output)
+            self._log_chunk(stderr.add(final_stderr, final=True), log_output=log_output)
 
         # Combine all the collected output parts.
-        output.join(result)
+        result.stdout = stdout.text()
+        result.stderr = stderr.text()
+        result.all_output = "".join(all_output)
 
         # Save return code.
         result.return_code = p.returncode
