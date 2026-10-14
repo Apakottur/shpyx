@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
     from shpyx._output import _DecoderFactory
 
+# The maximal time (in seconds) to wait for output before checking for a pending interrupt (e.g. CTRL-C).
+_INTERRUPT_CHECK_INTERVAL = 0.1
+
 
 class _Process(subprocess.Popen[bytes]):
     """Custom child process, with additional cleanup on exit."""
@@ -133,7 +136,11 @@ def execute(
         streams = (stdout, stderr)
         open_streams = len(streams)
         while open_streams:
-            stream_id, chunk = chunks.get()
+            # Wait with a timeout, since an indefinite wait can not be interrupted (e.g. by CTRL-C) on Windows.
+            try:
+                stream_id, chunk = chunks.get(timeout=_INTERRUPT_CHECK_INTERVAL)
+            except queue.Empty:
+                continue
 
             # An empty chunk marks the end of the stream, flushing any trailing incomplete bytes.
             final = not chunk

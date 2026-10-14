@@ -4,8 +4,10 @@ Test the command execution.
 
 from __future__ import annotations
 
+import _thread
 import sys
 import threading
+import time
 from enum import Enum, auto
 from typing import Any
 
@@ -69,6 +71,19 @@ def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
 
     proc: _Process = exit_spy.call_args.args[0]
     assert proc.returncode is not None
+
+
+def test_interrupt_while_waiting_for_output() -> None:
+    """A `KeyboardInterrupt` (e.g. CTRL-C) must stop a command promptly, even while no output arrives"""
+    # Interrupt the main thread while it waits for the output of a silent long-running command.
+    timer = threading.Timer(0.5, _thread.interrupt_main)
+    timer.start()
+
+    start = time.monotonic()
+    with pytest.raises(KeyboardInterrupt):
+        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+
+    assert time.monotonic() - start < 10
 
 
 def test_large_stderr_before_stdout() -> None:
