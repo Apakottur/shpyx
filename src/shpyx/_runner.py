@@ -7,7 +7,6 @@ import shlex
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
@@ -235,8 +234,6 @@ class Runner:
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
-        tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
-
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
@@ -246,10 +243,11 @@ class Runner:
                 if _SYSTEM == "Linux":  # pragma: no branch, linux-only
                     # Old format: https://linux.die.net/man/1/script
                     # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
+                    # The typescript file is not needed (the output is read from the pipes), so it is discarded.
+                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
                 elif _SYSTEM == "Darwin":  # pragma: no branch, darwin-only
                     # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
-                    args = f"script -q {tmp_file.name} {cmd_str}"
+                    args = f"script -q /dev/null {cmd_str}"
                 elif _SYSTEM == "Windows":  # pragma: no branch, windows-only
                     raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
 
@@ -342,7 +340,6 @@ class Runner:
         # Cleanup.
         p.stdout.close()
         p.stderr.close()
-        tmp_file.close()
 
         # Save return code.
         result.return_code = p.returncode
