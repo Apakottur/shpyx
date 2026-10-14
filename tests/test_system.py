@@ -1,0 +1,37 @@
+"""
+Test the platform system specific code.
+"""
+
+from __future__ import annotations
+
+import pytest
+import pytest_mock
+
+import shpyx
+from shpyx._system import _get_system, _get_unix_raw_cmd, _System
+
+
+@pytest.mark.parametrize(
+    ("system", "expected"),
+    [
+        (_System.LINUX, "script --return --quiet --command 'echo 1' /dev/null"),
+        (_System.DARWIN, "script -q /dev/null /bin/sh -c 'echo 1'"),
+    ],
+)
+def test_unix_raw_cmd(mocker: pytest_mock.MockerFixture, system: _System, expected: str) -> None:
+    """Test the `script` command built for `unix_raw`, on every supported platform."""
+    mocker.patch("shpyx._system._SYSTEM", system)
+    assert _get_unix_raw_cmd("echo 1") == expected
+
+
+def test_unix_raw_windows(mocker: pytest_mock.MockerFixture) -> None:
+    """`unix_raw` raises on Windows, which has no `script` utility."""
+    mocker.patch("shpyx._system._SYSTEM", _System.WINDOWS)
+    with pytest.raises(shpyx.ShpyxOSNotSupportedError, match="Unsupported system: Windows"):
+        shpyx.run("echo 1", unix_raw=True)
+
+
+def test_unsupported_system(mocker: pytest_mock.MockerFixture) -> None:
+    mocker.patch("shpyx._system.platform.system", return_value="FreeBSD")
+    with pytest.raises(shpyx.ShpyxOSNotSupportedError, match="Unsupported system: FreeBSD"):
+        _get_system()
