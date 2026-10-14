@@ -13,6 +13,7 @@ dev = [
   "pytest==9.1.1",
   "ruff==0.16.10",
   "ty==0.0.85",
+  "types-psutil==7.2.2.20260906",
 ]
 
 [project]
@@ -36,6 +37,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
+dependencies = ["psutil>=7"]
 
 [project.urls]
 homepage = "https://github.com/Apakottur/shpyx"

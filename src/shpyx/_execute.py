@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import queue
 import shlex
@@ -7,6 +8,8 @@ import subprocess
 import sys
 import threading
 from typing import TYPE_CHECKING
+
+import psutil
 
 from shpyx._errors import ShpyxInternalError
 from shpyx._output import OutputStream, read_stream
@@ -35,8 +38,13 @@ class Process(subprocess.Popen[bytes]):
         traceback: TracebackType | None,
     ) -> None:
         # On an exception (including `KeyboardInterrupt`), kill the child process instead of waiting for it to finish.
+        # Its descendants are killed as well, since otherwise they are left running (e.g. the commands of a shell).
         if exc_type is not None:
+            descendants = psutil.Process(self.pid).children(recursive=True)
             self.kill()
+            for descendant in descendants:
+                with contextlib.suppress(psutil.NoSuchProcess):
+                    descendant.kill()
             self.wait()
         super().__exit__(exc_type, value, traceback)
 
