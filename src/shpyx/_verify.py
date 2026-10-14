@@ -24,30 +24,39 @@ def verify_result(
     Raises:
         ShpyxVerificationError: If verification failed.
     """
-    success = True
+    # Collect a description of each failed check.
+    failures: list[str] = []
 
     # Verify return code.
     if verify_return_code:
-        success &= result.return_code == 0
+        if result.return_code != 0:
+            return_code_str = str(result.return_code)
+
+            # Add the signal name, if the command was killed by a signal (`subprocess` returns `-N` for signal `N`).
+            if use_signal_names and result.return_code < 0:
+                try:
+                    signal_name: str = signal.Signals(-result.return_code).name
+                    return_code_str += f" ({signal_name})"
+                except ValueError:
+                    pass
+
+            failures.append(f"failed with return code {return_code_str}")
 
     # Verify stderr.
     if verify_stderr:
-        success &= not result.stderr
+        if result.stderr:
+            failures.append("wrote to stderr")
 
-    if not success:
-        return_code_str = str(result.return_code)
+    # All checks passed.
+    if not failures:
+        return
 
-        # Add the signal name, if the command was killed by a signal (`subprocess` returns `-N` for signal `N`).
-        if use_signal_names and result.return_code < 0:
-            try:
-                signal_name: str = signal.Signals(-result.return_code).name
-                return_code_str += f" ({signal_name})"
-            except ValueError:
-                pass
+    # Mention every failed check, e.g. "failed with return code 1 and wrote to stderr".
+    failures_str = " and ".join(failures)
 
-        reason = (
-            f"The command '{result.cmd}' failed with return code {return_code_str}.\n\n"
-            f"Error output:\n{result.stderr}\n"
-            f"All output:\n{result.all_output}"
-        )
-        raise ShpyxVerificationError(reason=reason, result=result)
+    reason = (
+        f"The command '{result.cmd}' {failures_str}.\n\n"
+        f"Error output:\n{result.stderr}\n"
+        f"All output:\n{result.all_output}"
+    )
+    raise ShpyxVerificationError(reason=reason, result=result)
