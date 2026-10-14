@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import codecs
 import platform
+import queue
 import signal
-import subprocess
 import sys
 import tempfile
 import threading
@@ -24,6 +24,7 @@ import pytest
 import pytest_mock
 
 import shpyx
+from shpyx._runner import _get_system, _get_unix_raw_cmd, _Process, _System
 
 # Platform OS.
 _SYSTEM = platform.system()
@@ -55,6 +56,11 @@ def test_echo_as_list() -> None:
     """Simple use case when input is a list"""
     result = shpyx.run(["echo", "1"])
     _verify_result(result, return_code=0, stdout="1\n", stderr="")
+
+
+def test_list_cmd_display() -> None:
+    """The displayed command of list arguments is shell-quoted"""
+    assert shpyx.run(["echo", "a b"]).cmd == "echo 'a b'"
 
 
 def test_pipe() -> None:
@@ -181,24 +187,27 @@ class _SubprocessPopenIssue(Enum):
     STDERR_PIPE_MISSING = auto()
 
 
+class _NoStdoutProcess(_Process):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.stdout = None
+
+
+class _NoStderrProcess(_Process):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.stderr = None
+
+
 @pytest.mark.parametrize("issue", _SubprocessPopenIssue)
 def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue: _SubprocessPopenIssue) -> None:
-    orig = subprocess.Popen
-
-    def _popen(*args: Any, **kwargs: Any) -> Any:
-        match issue:
-            case _SubprocessPopenIssue.CRASH:
-                raise OSError("Some SO error")
-            case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
-                p = orig(*args, **kwargs)
-                p.stdout = None
-                return p
-            case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
-                p = orig(*args, **kwargs)
-                p.stderr = None
-                return p
-
-    mocker.patch("shpyx._runner.subprocess.Popen", _popen)
+    match issue:
+        case _SubprocessPopenIssue.CRASH:
+            mocker.patch("shpyx._runner._Process", side_effect=OSError("Some SO error"))
+        case _SubprocessPopenIssue.STDOUT_PIPE_MISSING:
+            mocker.patch("shpyx._runner._Process", _NoStdoutProcess)
+        case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
+            mocker.patch("shpyx._runner._Process", _NoStderrProcess)
 
     with pytest.raises(shpyx.ShpyxInternalError) as exc:
         shpyx.run("echo 1")
@@ -210,6 +219,24 @@ def test_fail_to_initialize_subprocess(mocker: pytest_mock.MockerFixture, issue:
             assert str(exc.value) == "Failed to initialize subprocess (stdout pipe)"
         case _SubprocessPopenIssue.STDERR_PIPE_MISSING:
             assert str(exc.value) == "Failed to initialize subprocess (stderr pipe)"
+
+
+def test_child_killed_on_interrupt(mocker: pytest_mock.MockerFixture) -> None:
+    """An exception raised mid-run (e.g. `KeyboardInterrupt`) must not leave an orphaned child process behind"""
+    exit_spy = mocker.spy(_Process, "__exit__")
+
+    class _InterruptedQueue(queue.SimpleQueue[tuple[int, bytes]]):
+        # Simulate an interrupt while waiting for the command output.
+        def get(self, *_args: object, **_kwargs: object) -> tuple[int, bytes]:
+            raise KeyboardInterrupt
+
+    mocker.patch("shpyx._runner.queue.SimpleQueue", _InterruptedQueue)
+
+    with pytest.raises(KeyboardInterrupt):
+        shpyx.run([sys.executable, "-c", "import time; time.sleep(30)"])
+
+    proc: _Process = exit_spy.call_args.args[0]
+    assert proc.returncode is not None
 
 
 def test_signal_names_enabled() -> None:
@@ -315,6 +342,32 @@ def test_unix_raw_enabled() -> None:
     )
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
+
+
+@pytest.mark.parametrize(
+    ("system", "expected"),
+    [
+        (_System.LINUX, "script --return --quiet --command 'echo 1' /dev/null"),
+        (_System.DARWIN, "script -q /dev/null /bin/sh -c 'echo 1'"),
+    ],
+)
+def test_unix_raw_cmd(mocker: pytest_mock.MockerFixture, system: _System, expected: str) -> None:
+    """Test the `script` command built for `unix_raw`, on every supported platform."""
+    mocker.patch("shpyx._runner._SYSTEM", system)
+    assert _get_unix_raw_cmd("echo 1") == expected
+
+
+def test_unix_raw_windows(mocker: pytest_mock.MockerFixture) -> None:
+    """`unix_raw` raises on Windows, which has no `script` utility."""
+    mocker.patch("shpyx._runner._SYSTEM", _System.WINDOWS)
+    with pytest.raises(shpyx.ShpyxOSNotSupportedError, match="Unsupported system: Windows"):
+        shpyx.run("echo 1", unix_raw=True)
+
+
+def test_unsupported_system(mocker: pytest_mock.MockerFixture) -> None:
+    mocker.patch("shpyx._runner.platform.system", return_value="FreeBSD")
+    with pytest.raises(shpyx.ShpyxOSNotSupportedError, match="Unsupported system: FreeBSD"):
+        _get_system()
 
 
 def test_output_decoding(mocker: pytest_mock.MockerFixture) -> None:

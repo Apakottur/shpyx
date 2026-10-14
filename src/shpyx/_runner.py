@@ -8,9 +8,9 @@ import shlex
 import signal
 import subprocess
 import sys
-import tempfile
 import threading
 from collections.abc import Callable
+from enum import Enum
 from typing import IO, TYPE_CHECKING
 
 from shpyx._errors import ShpyxInternalError, ShpyxOSNotSupportedError, ShpyxVerificationError
@@ -18,9 +18,32 @@ from shpyx._result import ShellCmdResult
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from types import TracebackType
 
-"""The platform system (Linux/Darwin/Windows/Java) is used for platform specific code"""
-_SYSTEM = platform.system()
+
+class _System(Enum):
+    """The platform systems supported by shpyx, used for platform specific code."""
+
+    LINUX = "Linux"
+    DARWIN = "Darwin"
+    WINDOWS = "Windows"
+
+
+def _get_system() -> _System:
+    """
+    Get the current platform system.
+
+    Raises:
+        ShpyxOSNotSupportedError: The current system is not supported.
+    """
+    system = platform.system()
+    try:
+        return _System(system)
+    except ValueError:
+        raise ShpyxOSNotSupportedError(f"Unsupported system: {system}") from None
+
+
+_SYSTEM = _get_system()
 
 
 # A callable that returns a fresh incremental decoder for a single command output stream.
@@ -55,6 +78,43 @@ def _read_stream(stream: IO[bytes], stream_id: int, chunks: queue.SimpleQueue[tu
             chunks.put((stream_id, chunk))
     finally:
         chunks.put((stream_id, b""))
+
+
+def _get_unix_raw_cmd(cmd_str: str) -> str:
+    """
+    Wrap a shell command with the `script` Unix utility, so that its output is captured as if written to a terminal.
+    The typescript file is not needed (the output is read from the pipes), so it is discarded to `/dev/null`.
+
+    Raises:
+        ShpyxOSNotSupportedError: The `script` utility is not available on Windows.
+    """
+    match _SYSTEM:
+        case _System.LINUX:
+            # Old format: https://linux.die.net/man/1/script
+            # New format: https://man7.org/linux/man-pages/man1/script.1.html
+            return f"script --return --quiet --command {shlex.quote(cmd_str)} /dev/null"
+        case _System.DARWIN:
+            # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
+            # The command is executed directly (not through a shell), so wrap it with `sh -c` to support shell logic.
+            return f"script -q /dev/null /bin/sh -c {shlex.quote(cmd_str)}"
+        case _System.WINDOWS:  # pragma: no branch, the match is exhaustive
+            raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM.value}")
+
+
+class _Process(subprocess.Popen[bytes]):
+    """Custom child process, with additional cleanup on exit."""
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        # On an exception (including `KeyboardInterrupt`), kill the child process instead of waiting for it to finish.
+        if exc_type is not None:
+            self.kill()
+            self.wait()
+        super().__exit__(exc_type, value, traceback)
 
 
 class Runner:
@@ -232,6 +292,7 @@ class Runner:
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Raises `ShpyxOSNotSupportedError` on Windows.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
                              Runner default: `None`, which uses the default decoder factory.
@@ -243,27 +304,17 @@ class Runner:
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
-        tmp_file = tempfile.NamedTemporaryFile()  # noqa: SIM115
-
         if isinstance(args, str):
             # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
             use_shell = True
 
             if unix_raw:
-                if _SYSTEM == "Linux":  # pragma: no branch, linux-only
-                    # Old format: https://linux.die.net/man/1/script
-                    # New format: https://man7.org/linux/man-pages/man1/script.1.html
-                    args = f"script --return --quiet --command {shlex.quote(cmd_str)} {tmp_file.name}"
-                elif _SYSTEM == "Darwin":  # pragma: no branch, darwin-only
-                    # MacOS format: https://keith.github.io/xcode-man-pages/script.1.html
-                    args = f"script -q {tmp_file.name} {cmd_str}"
-                elif _SYSTEM == "Windows":  # pragma: no branch, windows-only
-                    raise ShpyxOSNotSupportedError(f"Unsupported system: {_SYSTEM}")
+                args = _get_unix_raw_cmd(cmd_str)
 
         else:
             # When the arguments are a list, there is no need to use an actual shell.
-            cmd_str = " ".join(args)
+            cmd_str = shlex.join(args)
             use_shell = False
 
         # Log the command, if required.
@@ -282,7 +333,7 @@ class Runner:
 
         # Initialize the subprocess object.
         try:
-            p = subprocess.Popen(  # noqa: S603
+            p = _Process(
                 args,
                 shell=use_shell,
                 stdout=subprocess.PIPE,
@@ -295,48 +346,44 @@ class Runner:
         except Exception as e:
             raise ShpyxInternalError("Failed to initialize subprocess (subprocess.Popen)") from e
 
-        # Verify that all the pipes were properly configured.
-        if not p.stdout:
-            raise ShpyxInternalError("Failed to initialize subprocess (stdout pipe)")
-        if not p.stderr:
-            raise ShpyxInternalError("Failed to initialize subprocess (stderr pipe)")
+        with p:
+            # Verify that all the pipes were properly configured.
+            if not p.stdout:
+                raise ShpyxInternalError("Failed to initialize subprocess (stdout pipe)")
+            if not p.stderr:
+                raise ShpyxInternalError("Failed to initialize subprocess (stderr pipe)")
 
-        # Initialize the result object.
-        result = ShellCmdResult(cmd=cmd_str)
+            # Initialize the result object.
+            result = ShellCmdResult(cmd=cmd_str)
 
-        # Create a fresh decoder per stream (they are stateful and must not be shared).
-        decoder_factory = decoder_factory or self._decoder_factory
-        decoders = (decoder_factory(), decoder_factory())
+            # Create a fresh decoder per stream (they are stateful and must not be shared).
+            decoder_factory = decoder_factory or self._decoder_factory
+            decoders = (decoder_factory(), decoder_factory())
 
-        # Read each output stream in its own thread, so that a command blocked on one full pipe can't deadlock the
-        # read of the other. The chunks are consumed here in arrival order.
-        chunks: queue.SimpleQueue[tuple[int, bytes]] = queue.SimpleQueue()
-        for stream_id, stream in enumerate((p.stdout, p.stderr)):
-            threading.Thread(target=_read_stream, args=(stream, stream_id, chunks), daemon=True).start()
+            # Read each output stream in its own thread, so that a command blocked on one full pipe can't deadlock the
+            # read of the other. The chunks are consumed here in arrival order.
+            chunks: queue.SimpleQueue[tuple[int, bytes]] = queue.SimpleQueue()
+            for stream_id, stream in enumerate((p.stdout, p.stderr)):
+                threading.Thread(target=_read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
-        open_streams = len(decoders)
-        while open_streams:
-            stream_id, chunk = chunks.get()
+            open_streams = len(decoders)
+            while open_streams:
+                stream_id, chunk = chunks.get()
 
-            # An empty chunk marks the end of the stream, flushing any trailing incomplete bytes.
-            final = not chunk
-            if final:
-                open_streams -= 1
+                # An empty chunk marks the end of the stream, flushing any trailing incomplete bytes.
+                final = not chunk
+                if final:
+                    open_streams -= 1
 
-            # Add the partial output to the result and log it, if needed.
-            data = self._decode_output(data=chunk, decoder=decoders[stream_id], log_output=log_output, final=final)
-            self._add_output(
-                result=result,
-                stdout=data if stream_id == 0 else "",
-                stderr=data if stream_id == 1 else "",
-            )
+                # Add the partial output to the result and log it, if needed.
+                data = self._decode_output(data=chunk, decoder=decoders[stream_id], log_output=log_output, final=final)
+                self._add_output(
+                    result=result,
+                    stdout=data if stream_id == 0 else "",
+                    stderr=data if stream_id == 1 else "",
+                )
 
-        p.wait()
-
-        # Cleanup.
-        p.stdout.close()
-        p.stderr.close()
-        tmp_file.close()
+            p.wait()
 
         # Save return code.
         result.return_code = p.returncode

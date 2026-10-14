@@ -8,6 +8,9 @@ on:
 
 jobs:
   release:
+    # A manual run on a branch would build a dev version (.devN+g<hash>) that PyPI rejects,
+    # so only release from a version tag.
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     permissions:

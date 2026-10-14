@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Self
+
 import pytest_mock
 
 
@@ -25,6 +29,12 @@ class _FakeProc:
     def wait(self) -> int:
         return self.returncode
 
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        pass
+
 
 def patch_fake_proc(
     mocker: pytest_mock.MockerFixture,
@@ -33,4 +43,4 @@ def patch_fake_proc(
     stderr_chunks: list[bytes],
 ) -> None:
     proc = _FakeProc(stdout_chunks, stderr_chunks or [])
-    mocker.patch("shpyx._runner.subprocess.Popen", return_value=proc)
+    mocker.patch("shpyx._runner._Process", return_value=proc)
