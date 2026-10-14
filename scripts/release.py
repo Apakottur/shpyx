@@ -33,7 +33,7 @@ def main() -> None:
 
     # Fetch and fast-forward to origin/main.
     print("Fetching from origin...")
-    shpyx.run("git pull", log_output=True)
+    shpyx.run("git pull")
 
     # Derive the GitHub "owner/repo" slug (and PyPI package name) from the origin remote,
     # supporting both SSH (git@github.com:owner/repo.git) and HTTPS URLs.
@@ -52,6 +52,20 @@ def main() -> None:
         _abort(f"Cannot parse PyPI version {version!r} as 'major.minor.patch'.")
     major, minor, patch = (int(part) for part in parts)
 
+    # Preview the release notes that the workflow will publish, so the version bump can be
+    # picked from them. This calls the same GitHub endpoint that `generate_release_notes: true`
+    # uses in release.yml, so the output matches what the Release workflow produces (assuming
+    # no new merges land before the tag is pushed). The tag is not chosen yet, so the notes are
+    # generated for the main branch: only the "Full Changelog" compare link differs, ending at
+    # main instead of the new tag. A failure here aborts before tagging, since it likely means
+    # the release notes the workflow produces would be wrong too.
+    print("\nGenerating release notes preview...")
+    notes = shpyx.run(
+        f"gh api repos/{slug}/releases/generate-notes -f tag_name={_MAIN_BRANCH} "
+        f"-f target_commitish={_MAIN_BRANCH} --jq .body",
+    )
+    print(f"\n{'-' * 72}\n{notes.stdout.strip()}\n{'-' * 72}")
+
     # Let the user pick the next version.
     bumps = {
         "1": ("patch", f"{major}.{minor}.{patch + 1}"),
@@ -65,17 +79,6 @@ def main() -> None:
     while (choice := input("Choice [1/2/3]: ").strip()) not in bumps:
         print("Invalid choice, please enter 1, 2 or 3.")
     tag = f"v{bumps[choice][1]}"
-
-    # Preview the release notes that the workflow will publish. This calls the same
-    # GitHub endpoint that `generate_release_notes: true` uses in release.yml, so the
-    # output matches what the Release workflow produces (assuming no new merges land
-    # before the tag is pushed). A failure here aborts before tagging, since it likely
-    # means the release notes the workflow produces would be wrong too.
-    print("\nGenerating release notes preview...")
-    notes = shpyx.run(
-        f"gh api repos/{slug}/releases/generate-notes -f tag_name={tag} -f target_commitish={_MAIN_BRANCH} --jq .body",
-    )
-    print(f"\n{'-' * 72}\n{notes.stdout.strip()}\n{'-' * 72}")
 
     # Handle a pre-existing tag (e.g. from a release run that failed after tagging).
     local = shpyx.run(f"git tag --list {tag}").stdout.strip()
