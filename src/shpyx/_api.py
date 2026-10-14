@@ -6,6 +6,8 @@ from shpyx._execute import execute
 from shpyx._output import _default_decoder_factory
 
 if TYPE_CHECKING:
+    import os
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
     from shpyx._output import _DecoderFactory
@@ -59,7 +61,7 @@ class Runner:
 
     def run(
         self,
-        args: str | list[str],
+        args: str | Sequence[str | os.PathLike[str]],
         *,
         # Runner configuration.
         log_cmd: bool | None = None,
@@ -68,7 +70,7 @@ class Runner:
         verify_stderr: bool | None = None,
         use_signal_names: bool | None = None,
         # Command execution configuration.
-        env: dict[str, str] | None = None,
+        env: Mapping[str, str] | None = None,
         exec_dir: Path | str | None = None,
         unix_raw: bool = False,
         decoder_factory: _DecoderFactory | None = None,
@@ -79,7 +81,8 @@ class Runner:
         Args:
             Command:
             -------
-            args: The shell command arguments, can be a string (with the full command) or a list of strings.
+            args: The shell command arguments, can be a string (with the full command) or a sequence of strings
+                  and paths.
 
             Runner configuration:
             -------------------

@@ -15,6 +15,7 @@ from shpyx._system import _get_unix_raw_cmd
 from shpyx._verify import verify_result
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
     from types import TracebackType
 
@@ -46,14 +47,14 @@ def _log(msg: str) -> None:
 
 
 def execute(
-    args: str | list[str],
+    args: str | Sequence[str | os.PathLike[str]],
     *,
     log_cmd: bool,
     log_output: bool,
     verify_return_code: bool,
     verify_stderr: bool,
     use_signal_names: bool,
-    env: dict[str, str] | None,
+    env: Mapping[str, str] | None,
     exec_dir: Path | str | None,
     unix_raw: bool,
     decoder_factory: _DecoderFactory,
@@ -70,7 +71,7 @@ def execute(
     if isinstance(args, str):
         cmd_str = args
     else:
-        cmd_str = shlex.join(args)
+        cmd_str = shlex.join(os.fspath(arg) for arg in args)
 
     if unix_raw:
         # The `script` utility receives the command as a single shell string, for both string and list arguments.
