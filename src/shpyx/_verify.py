@@ -24,17 +24,15 @@ def verify_result(
     Raises:
         ShpyxVerificationError: If verification failed.
     """
-    success = True
+    return_code_failed = verify_return_code and result.return_code != 0
+    stderr_failed = verify_stderr and bool(result.stderr)
 
-    # Verify return code.
-    if verify_return_code:
-        success &= result.return_code == 0
+    if not (return_code_failed or stderr_failed):
+        return
 
-    # Verify stderr.
-    if verify_stderr:
-        success &= not result.stderr
+    failures = []
 
-    if not success:
+    if return_code_failed:
         return_code_str = str(result.return_code)
 
         # Add the signal name, if the command was killed by a signal (`subprocess` returns `-N` for signal `N`).
@@ -45,9 +43,14 @@ def verify_result(
             except ValueError:
                 pass
 
-        reason = (
-            f"The command '{result.cmd}' failed with return code {return_code_str}.\n\n"
-            f"Error output:\n{result.stderr}\n"
-            f"All output:\n{result.all_output}"
-        )
-        raise ShpyxVerificationError(reason=reason, result=result)
+        failures.append(f"failed with return code {return_code_str}")
+
+    if stderr_failed:
+        failures.append("wrote to stderr")
+
+    reason = (
+        f"The command '{result.cmd}' {' and '.join(failures)}.\n\n"
+        f"Error output:\n{result.stderr}\n"
+        f"All output:\n{result.all_output}"
+    )
+    raise ShpyxVerificationError(reason=reason, result=result)

@@ -43,7 +43,7 @@ def test_verify_stderr_enabled(capfd: pytest.CaptureFixture[str]) -> None:
         shpyx.run(cmd, log_output=True, verify_stderr=True, use_signal_names=False)
 
     assert (
-        exc.value.reason == f"The command '{cmd}' failed with return code 0.\n\n"
+        exc.value.reason == f"The command '{cmd}' wrote to stderr.\n\n"
         f"Error output:\n{output_by_platform[SYSTEM]}\n"
         f"All output:\n{output_by_platform[SYSTEM]}"
     )
@@ -84,3 +84,14 @@ def test_signal_names_disabled(mocker: pytest_mock.MockerFixture) -> None:
         shpyx.Runner(use_signal_names=False).run("cmd")
 
     assert exc.value.reason.startswith(f"The command 'cmd' failed with return code {-signal.SIGTERM}.\n")
+
+
+def test_verify_return_code_and_stderr(mocker: pytest_mock.MockerFixture) -> None:
+    """When both checks fail, the reason should mention both."""
+    patch_fake_proc(mocker, stdout_chunks=[], stderr_chunks=[b"oops"], returncode=3)
+    with pytest.raises(shpyx.ShpyxVerificationError) as exc:
+        shpyx.run("cmd", verify_stderr=True)
+
+    assert exc.value.reason == (
+        "The command 'cmd' failed with return code 3 and wrote to stderr.\n\nError output:\noops\nAll output:\noops"
+    )
