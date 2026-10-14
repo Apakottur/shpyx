@@ -24,32 +24,38 @@ def verify_result(
     Raises:
         ShpyxVerificationError: If verification failed.
     """
-    return_code_failed = verify_return_code and result.return_code != 0
-    stderr_failed = verify_stderr and bool(result.stderr)
+    # Collect a description of each failed check.
+    failures: list[str] = []
 
-    if not (return_code_failed or stderr_failed):
+    # Verify return code.
+    if verify_return_code:
+        if result.return_code != 0:
+            return_code_str = str(result.return_code)
+
+            # Add the signal name, if the command was killed by a signal (`subprocess` returns `-N` for signal `N`).
+            if use_signal_names and result.return_code < 0:
+                try:
+                    signal_name: str = signal.Signals(-result.return_code).name
+                    return_code_str += f" ({signal_name})"
+                except ValueError:
+                    pass
+
+            failures.append(f"failed with return code {return_code_str}")
+
+    # Verify stderr.
+    if verify_stderr:
+        if result.stderr:
+            failures.append("wrote to stderr")
+
+    # All checks passed.
+    if not failures:
         return
 
-    failures = []
-
-    if return_code_failed:
-        return_code_str = str(result.return_code)
-
-        # Add the signal name, if the command was killed by a signal (`subprocess` returns `-N` for signal `N`).
-        if use_signal_names and result.return_code < 0:
-            try:
-                signal_name: str = signal.Signals(-result.return_code).name
-                return_code_str += f" ({signal_name})"
-            except ValueError:
-                pass
-
-        failures.append(f"failed with return code {return_code_str}")
-
-    if stderr_failed:
-        failures.append("wrote to stderr")
+    # Mention every failed check, e.g. "failed with return code 1 and wrote to stderr".
+    failures_str = " and ".join(failures)
 
     reason = (
-        f"The command '{result.cmd}' {' and '.join(failures)}.\n\n"
+        f"The command '{result.cmd}' {failures_str}.\n\n"
         f"Error output:\n{result.stderr}\n"
         f"All output:\n{result.all_output}"
     )
