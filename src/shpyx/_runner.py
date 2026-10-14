@@ -117,6 +117,33 @@ class _Process(subprocess.Popen[bytes]):
         super().__exit__(exc_type, value, traceback)
 
 
+class _OutputParts:
+    """
+    The decoded output of a command, collected in parts while it runs and joined once it exits (for performance).
+    """
+
+    def __init__(self) -> None:
+        self._stdout: list[str] = []
+        self._stderr: list[str] = []
+        self._all_output: list[str] = []
+
+    def add(self, *, stdout: str, stderr: str) -> None:
+        """
+        Add decoded partial outputs, keeping `all_output` in arrival order.
+        """
+        self._stdout.append(stdout)
+        self._stderr.append(stderr)
+        self._all_output += (stdout, stderr)
+
+    def join(self, result: ShellCmdResult) -> None:
+        """
+        Concatenate all the collected parts into the output fields of the result.
+        """
+        result.stdout = "".join(self._stdout)
+        result.stderr = "".join(self._stderr)
+        result.all_output = "".join(self._all_output)
+
+
 class Runner:
     """
     An instance of a shell command runner, used to run shell commands with a specific runner configuration.
@@ -186,15 +213,6 @@ class Runner:
         if decoded_data and _is_action_required(user=log_output, default=self._log_output):
             self._log(decoded_data)
         return decoded_data
-
-    @staticmethod
-    def _add_output(*, result: ShellCmdResult, stdout: str, stderr: str) -> None:
-        """
-        Add decoded partial outputs to the result, keeping `all_output` in arrival order.
-        """
-        result.stdout += stdout
-        result.stderr += stderr
-        result.all_output += stdout + stderr
 
     def _verify_result(
         self,
@@ -292,6 +310,7 @@ class Runner:
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
                       This allows capturing all characters from the command output, including cursor movement and
                       colors. This can be useful when the command is an interactive shell, like `psql`.
+                      Supported for both string and list arguments; the command is always run through a shell.
                       Raises `ShpyxOSNotSupportedError` on Windows.
                       Runner default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
@@ -304,18 +323,19 @@ class Runner:
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
+        # The command as a single string, used for logging and in the result.
         if isinstance(args, str):
-            # When a single string is passed, use an actual shell to support shell logic like bash piping.
             cmd_str = args
-            use_shell = True
-
-            if unix_raw:
-                args = _get_unix_raw_cmd(cmd_str)
-
         else:
-            # When the arguments are a list, there is no need to use an actual shell.
             cmd_str = shlex.join(args)
-            use_shell = False
+
+        if unix_raw:
+            # The `script` utility receives the command as a single shell string, for both string and list arguments.
+            args = _get_unix_raw_cmd(cmd_str)
+
+        # A string is run through an actual shell, to support shell logic like bash piping.
+        # A list is run directly, with no need for a shell.
+        use_shell = isinstance(args, str)
 
         # Log the command, if required.
         if _is_action_required(user=log_cmd, default=self._log_cmd):
@@ -355,6 +375,7 @@ class Runner:
 
             # Initialize the result object.
             result = ShellCmdResult(cmd=cmd_str)
+            output = _OutputParts()
 
             # Create a fresh decoder per stream (they are stateful and must not be shared).
             decoder_factory = decoder_factory or self._decoder_factory
@@ -377,13 +398,15 @@ class Runner:
 
                 # Add the partial output to the result and log it, if needed.
                 data = self._decode_output(data=chunk, decoder=decoders[stream_id], log_output=log_output, final=final)
-                self._add_output(
-                    result=result,
+                output.add(
                     stdout=data if stream_id == 0 else "",
                     stderr=data if stream_id == 1 else "",
                 )
 
             p.wait()
+
+        # Combine all the collected output parts.
+        output.join(result)
 
         # Save return code.
         result.return_code = p.returncode

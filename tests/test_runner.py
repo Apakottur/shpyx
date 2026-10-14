@@ -343,6 +343,14 @@ def test_unix_raw_enabled() -> None:
     assert result.return_code == 123
     assert result.all_output == stderr_by_platform[_SYSTEM]
 
+    # List arguments are supported as well.
+    output_by_platform = {
+        "Darwin": "^D\x08\x08a b\r\n",
+        "Linux": "a b\r\n",
+    }
+    result = shpyx.run(["echo", "a b"], unix_raw=True)
+    _verify_result(result, return_code=0, stdout=output_by_platform[_SYSTEM], stderr="")
+
 
 @pytest.mark.parametrize(
     ("system", "expected"),
