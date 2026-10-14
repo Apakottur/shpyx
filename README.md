@@ -88,7 +88,8 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 
 ### Propagating terminal control sequences
 
-Note: as of now this is only supported for Unix environments.
+Note: this is only supported on Linux and macOS. On any other system (including Windows), `unix_raw=True` raises
+`ShpyxOSNotSupportedError`.
 
 Some commands, like `psql`, might output special characters used for terminal management like cursor movement and
 colors. For example, the `psql` command is used to start an interactive shell against a Postgres DB:
@@ -114,6 +115,12 @@ shpyx provides a keyword argument that does this wrapping automatically, `unix_r
 shpyx.run(f"psql -h {host} -p {port} -U {user} -d {database}", log_output=True, unix_raw=True)
 ```
 
+It also works with list arguments, which are shell-quoted and always run through a shell:
+
+```python
+shpyx.run(["psql", "-h", host, "-p", port, "-U", user, "-d", database], log_output=True, unix_raw=True)
+```
+
 The flag is disabled by default, and should only be used for interactive commands like `psql`.
 
 ## API Reference
@@ -127,6 +134,7 @@ The following arguments are supported by `Runner`:
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `True`  |
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `False` |
 | `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `True`  |
+| `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `UTF-8` |
 
 The following arguments are supported by `run`:
 
@@ -137,22 +145,23 @@ The following arguments are supported by `run`:
 | `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default`         |
 | `use_signal_names`   | Log the name of the signal corresponding to a non-zero error code.         | `Runner default`         |
+| `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `Runner default`         |
 | `env`                | Environment variables to set during the execution of the command.          | `Same as parent process` |
 | `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `Same as parent process` |
-| `unix_raw`           | (UNIX ONLY) Whether to use the `script` Unix utility to run the command.   | `False`                  |
+| `unix_raw`           | (Linux/macOS only) Use the `script` Unix utility to run the command.       | `False`                  |
 
 ## Implementation details
 
 `shpyx` is a wrapper around the excellent [subprocess](https://docs.python.org/3/library/subprocess.html) module, aiming
 to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
 
+The output streams (stdout and stderr) are each read by a dedicated thread, and decoded incrementally (UTF-8 by default,
+see `decoder_factory`) as the output arrives. This allows logging the live output, keeps the order of the combined output
+(`all_output`), and avoids deadlocks when a command fills one pipe while `shpyx` waits on the other.
+A `KeyboardInterrupt` (CTRL-C) stops the run promptly and kills the subprocess.
+
 `shpyx` supports Linux, macOS and Windows. Other systems (e.g. FreeBSD) are treated as generic POSIX systems: `run` works
 as usual, but `unix_raw` raises `ShpyxOSNotSupportedError`.
-
-While the core API logic is fully supported on all of them, there is some OS specific code for minor quality-of-life
-improvements.
-For example, on non Windows systems, [fcntl](https://docs.python.org/3/library/fcntl.html) is used to configure the subprocess to
-always be incorruptible (which means one can CTRL-C out of any command).
 
 ## Security
 
