@@ -11,6 +11,10 @@ class ShpyxVerificationError(ShpyxError):
     """
     The execution of a shell command was NOT successful.
     Note that the conditions for success are configurable.
+
+    Attributes:
+        reason: The reason the verification failed, naming the failed checks.
+        result: The result of the command.
     """
 
     def __init__(self, reason: str, result: ShellCmdResult) -> None:

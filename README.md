@@ -5,8 +5,22 @@
 [![image](https://img.shields.io/pypi/v/shpyx.svg)](https://pypi.python.org/pypi/shpyx)
 [![image](https://img.shields.io/pypi/l/shpyx.svg)](https://github.com/Apakottur/shpyx/blob/main/LICENSE)
 [![image](https://img.shields.io/pypi/pyversions/shpyx.svg)](https://pypi.python.org/pypi/shpyx)
+[![Documentation](https://readthedocs.org/projects/shpyx/badge/?version=latest)](https://shpyx.readthedocs.io/)
 
 **shpyx** is a simple, lightweight and typed library for running shell commands in Python.
+
+**Documentation**: [shpyx.readthedocs.io](https://shpyx.readthedocs.io/)
+
+## Installation
+
+Install with `uv` or `pip`:
+
+```shell
+uv add shpyx
+pip install shpyx
+```
+
+## Quick start
 
 Use `shpyx.run` to run a shell command in a subprocess:
 
@@ -22,170 +36,18 @@ ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_c
 ''
 ```
 
-## Installation
-
-Install with `pip`:
-
-```shell
-pip install shpyx
-```
-
-## How Tos
-
-### Run a command
-
-In string format:
+Shell logic works when the command is a string, and a custom `Runner` sets defaults for every call:
 
 ```python
->>> shpyx.run("echo 1")
-ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
-```
-
-In list format:
-
-```python
->>> shpyx.run(["echo", "1"])
-ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
-```
-
-### Run a command and print live output
-
-```python
->>> shpyx.run("echo 1", log_output=True)
-1
-ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
-```
-
-### Run a command with shell specific logic
-
-When the argument to `run` is a string, an actual shell is created in the subprocess and shell logic can be used.
-For example, the pipe operator can be used in bash/sh:
-
-```python
->>> shpyx.run("seq 1 5 | grep '2'")
-ShellCmdResult(cmd="seq 1 5 | grep '2'", stdout='2\n', stderr='', all_output='2\n', return_code=0)
-```
-
-### Create a custom runner
-
-Use a custom runner to override the execution defaults, and not have to pass them to every call.
-
-For example, we can change the default value of `log_cmd`, so that all commands are logged:
-
-```python
->>> shpyx.run("echo 1")
-ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
-
->>> shpyx.run("echo 1", log_cmd=True)
-Running: echo 1
-ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
-
+>>> shpyx.run("seq 1 5 | grep '2'").stdout
+'2\n'
 >>> runner = shpyx.Runner(log_cmd=True)
 >>> runner.run("echo 1")
 Running: echo 1
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
-### Propagating terminal control sequences
-
-Note: this is only supported on Linux and macOS. On any other system (including Windows), `unix_raw=True` raises
-`ShpyxOSNotSupportedError`.
-
-Some commands, like `psql`, might output special characters used for terminal management like cursor movement and
-colors. For example, the `psql` command is used to start an interactive shell against a Postgres DB:
-
-```python
-shpyx.run(f"psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
-```
-
-However, the above call will not work as well as running `psql` directly, due to terminal control sequences not being
-properly propagated. To make it work well, we need to use the [script](https://man7.org/linux/man-pages/man1/script.1.html)
-utility which will properly propagate all control sequences:
-
-```python
-# Linux:
-shpyx.run(f"script -q -c 'psql -h {host} -p {port} -U {user} -d {database}'", log_output=True)
-# MacOS:
-shpyx.run(f"script -q /dev/null psql -h {host} -p {port} -U {user} -d {database}", log_output=True)
-```
-
-shpyx provides a keyword argument that does this wrapping automatically, `unix_raw`:
-
-```python
-shpyx.run(f"psql -h {host} -p {port} -U {user} -d {database}", log_output=True, unix_raw=True)
-```
-
-It also works with list arguments, which are shell-quoted and always run through a shell:
-
-```python
-shpyx.run(["psql", "-h", host, "-p", port, "-U", user, "-d", database], log_output=True, unix_raw=True)
-```
-
-The flag is disabled by default, and should only be used for interactive commands like `psql`.
-
-## API Reference
-
-The following arguments are supported by `Runner`:
-
-| Name                 | Description                                                                | Default |
-| -------------------- | -------------------------------------------------------------------------- | ------- |
-| `log_cmd`            | Log the executed command.                                                  | `False` |
-| `log_output`         | Log the live output of the command (while it is being executed).           | `False` |
-| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `True`  |
-| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `False` |
-| `use_signal_names`   | Log the name of the signal that killed the command, if any.                | `True`  |
-| `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `UTF-8` |
-
-The following arguments are supported by `run`:
-
-| Name                 | Description                                                                | Default                  |
-| -------------------- | -------------------------------------------------------------------------- | ------------------------ |
-| `log_cmd`            | Log the executed command.                                                  | `Runner default`         |
-| `log_output`         | Log the live output of the command (while it is being executed).           | `Runner default`         |
-| `verify_return_code` | Raise an exception if the shell return code of the command is not `0`.     | `Runner default`         |
-| `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `Runner default`         |
-| `use_signal_names`   | Log the name of the signal that killed the command, if any.                | `Runner default`         |
-| `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `Runner default`         |
-| `env`                | Environment variables to set during the execution of the command.          | `Same as parent process` |
-| `exec_dir`           | Custom path to execute the command in (defaults to current directory).     | `Same as parent process` |
-| `unix_raw`           | (Linux/macOS only) Use the `script` Unix utility to run the command.       | `False`                  |
-
-## Implementation details
-
-`shpyx` is a wrapper around the excellent [subprocess](https://docs.python.org/3/library/subprocess.html) module, aiming
-to concentrate all the different API functions (`Popen`/`communicate`/`poll`/`wait`) into a single function - `shpyx.run`.
-
-The output streams (stdout and stderr) are each read by a dedicated thread, and decoded incrementally (UTF-8 by default,
-see `decoder_factory`, typed as `shpyx.DecoderFactory`) as the output arrives. This allows logging the live output, keeps
-the order of the combined output (`all_output`), and avoids deadlocks when a command fills one pipe while `shpyx` waits on
-the other.
-A `KeyboardInterrupt` (CTRL-C), or any other exception raised during the run, stops it promptly and kills the subprocess
-along with all of its descendants (e.g. every command of a shell pipeline).
-
-`shpyx` supports Linux, macOS and Windows. Other systems (e.g. FreeBSD) are treated as generic POSIX systems: `run` works
-as usual, but `unix_raw` raises `ShpyxOSNotSupportedError`.
-
-## Security
-
-The call to `subprocess.Popen` uses `shell=True` when the input to `run` is a string (to support shell logic like bash piping).
-This means that an actual system shell is being created, and the subprocess has the permissions of the main Python process.
-
-It is therefore recommended not pass any untrusted input to `shpyx.run`.
-
-For more info, see [security considerations](https://docs.python.org/3/library/subprocess.html#security-considerations).
-
-## Useful links
-
-Relevant Python libraries:
-
-- [subprocess](https://docs.python.org/3/library/subprocess.html)
-- [shlex](https://docs.python.org/3/library/shlex.html)
-
-Other 3rd-party libraries for running shell commands in Python:
-
-- [sarge](https://github.com/vsajip/sarge)
-- [sh](https://github.com/amoffat/sh)
-- [invoke](https://github.com/pyinvoke/invoke)
+See the [documentation](https://shpyx.readthedocs.io/) for more guides, every option, and the full API reference.
 
 ## Contributing
 

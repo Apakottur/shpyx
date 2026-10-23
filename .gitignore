@@ -16,3 +16,6 @@ dist
 # Temporary files
 tmp
 .cspellcache
+
+# Docs
+site
