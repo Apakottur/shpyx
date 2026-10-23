@@ -18,11 +18,15 @@ as usual, but `unix_raw` raises [`ShpyxOSNotSupportedError`](reference/api.md#sh
 
 ## Security
 
-The call to `subprocess.Popen` uses `shell=True` when the input to `run` is a string (to support shell logic like bash
-piping). This means that an actual system shell is being created, and the subprocess has the permissions of the main
-Python process.
+Never pass untrusted input to `shpyx.run`, whether the command is a string or a list. The subprocess has the permissions
+of the main Python process.
 
-It is therefore recommended not to pass any untrusted input to `shpyx.run`.
+When the command is a string, `subprocess.Popen` is called with `shell=True` (to support shell logic like bash piping).
+An actual system shell is created, so shell syntax in the input (`;`, `|`, `$(...)`, ...) runs arbitrary commands.
+
+When the command is a list, no shell is involved (with `unix_raw`, the arguments are shell-quoted before being passed to
+`script`). This prevents shell injection, but not other attacks: untrusted input can still pick the program to run, or
+inject options that make it run arbitrary code (e.g. `--upload-pack` for `git`).
 
 For more info, see [security considerations](https://docs.python.org/3/library/subprocess.html#security-considerations).
 

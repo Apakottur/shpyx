@@ -16,6 +16,10 @@ In list format:
 ShellCmdResult(cmd='echo 1', stdout='1\n', stderr='', all_output='1\n', return_code=0)
 ```
 
+!!! warning
+
+    Never pass untrusted input to `run`, in either format. See [Security](how-it-works.md#security).
+
 ## Run a command and print live output
 
 ```python
@@ -33,11 +37,6 @@ For example, the pipe operator can be used in bash/sh:
 >>> shpyx.run("seq 1 5 | grep '2'")
 ShellCmdResult(cmd="seq 1 5 | grep '2'", stdout='2\n', stderr='', all_output='2\n', return_code=0)
 ```
-
-!!! warning
-
-    A string command is run through a real system shell, so never pass untrusted input to it. See
-    [Security](how-it-works.md#security).
 
 ## Handle a failed command
 
