@@ -15,6 +15,11 @@ dev = [
   "ty==0.0.91",
   "types-psutil==7.2.2.20260906",
 ]
+docs = [
+  #
+  "mkdocstrings-python==2.0.10",
+  "zensical==0.0.71",
+]
 
 [project]
 name = "shpyx"
@@ -42,7 +47,7 @@ dependencies = ["psutil>=7"]
 [project.urls]
 homepage = "https://github.com/Apakottur/shpyx"
 repository = "https://github.com/Apakottur/shpyx"
-documentation = "https://github.com/Apakottur/shpyx"
+documentation = "https://shpyx.readthedocs.io/"
 
 [tool.hatch.version]
 source = "vcs"

@@ -41,3 +41,6 @@ maxfail
 commitish
 psutil
 getpid
+Apakottur
+lucide
+mkdocstrings

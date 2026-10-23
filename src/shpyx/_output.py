@@ -7,8 +7,10 @@ from typing import IO, TYPE_CHECKING
 if TYPE_CHECKING:
     import queue
 
-# A callable that returns a fresh incremental decoder for a single command output stream.
 DecoderFactory = Callable[[], codecs.IncrementalDecoder]
+"""
+A callable that returns a fresh incremental decoder for a single command output stream.
+"""
 
 
 def default_decoder_factory() -> codecs.IncrementalDecoder:

@@ -16,7 +16,14 @@ class ShpyxVerificationError(ShpyxError):
     def __init__(self, reason: str, result: ShellCmdResult) -> None:
         super().__init__(reason)
         self.reason = reason
+        """
+        The reason the verification failed, naming the failed checks.
+        """
+
         self.result = result
+        """
+        The result of the command.
+        """
 
 
 class ShpyxInternalError(ShpyxError):

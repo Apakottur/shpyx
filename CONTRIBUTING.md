@@ -36,6 +36,23 @@ mypy --config-file linters/mypy.toml src tests
 ty check --config-file linters/ty.toml src tests
 ```
 
+## Documentation
+
+The documentation site lives in `docs/`, is built with [Zensical](https://zensical.org/), and is hosted on
+[Read the Docs](https://shpyx.readthedocs.io/). The Python API reference is generated from the docstrings.
+
+Preview it locally with live reload:
+
+```shell
+uv run --group docs zensical serve
+```
+
+Build it the way CI does (warnings, such as broken links, fail the build):
+
+```shell
+uv run --group docs zensical build --strict
+```
+
 ## Releasing
 
 To release a new version, run the interactive script:

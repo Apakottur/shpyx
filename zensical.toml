@@ -1,0 +1,53 @@
+[project]
+site_name = "shpyx"
+site_description = "Run shell commands in Python."
+site_url = "https://shpyx.readthedocs.io/"
+repo_name = "Apakottur/shpyx"
+repo_url = "https://github.com/Apakottur/shpyx"
+edit_uri = "edit/main/docs/"
+docs_dir = "docs"
+site_dir = "site"
+strict = true
+nav = [
+  { "Home" = "index.md" },
+  { "How-to guides" = "how-to.md" },
+  { "Configuration" = "configuration.md" },
+  { "How it works" = "how-it-works.md" },
+  { "Reference" = [
+    { "Python API" = "reference/api.md" },
+  ] },
+]
+
+[project.theme]
+features = ["content.code.copy", "navigation.footer", "toc.follow"]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions]
+admonition = {}
+pymdownx.highlight = {}
+pymdownx.superfences = {}
+toc.permalink = true
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+heading_level = 2
+members_order = "source"
+separate_signature = true
+show_root_heading = true
+show_signature_annotations = true
+show_source = false

@@ -48,8 +48,8 @@ class Runner:
             log_output: Whether to log the live output of the command (while it is being executed).
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
-            use_signal_names:  Whether to log the name of the signal that killed the command (negative return code),
-                               in case of result verification failure.
+            use_signal_names: Whether to log the name of the signal that killed the command (negative return code),
+                in case of result verification failure.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
         """
         self._log_cmd = log_cmd
@@ -79,44 +79,37 @@ class Runner:
         Run a shell command.
 
         Args:
-            Command:
-            -------
             args: The shell command arguments, can be a string (with the full command) or a sequence of strings
-                  and paths.
-
-            Runner configuration:
-            -------------------
+                and paths.
             log_cmd: Whether to log the executed command.
-                     Runner default: `False`.
+                Runner default: `False`.
             log_output: Whether to log the live output of the command (while it is being executed).
-                        Runner default: `False`.
+                Runner default: `False`.
             verify_return_code: Whether to raise an exception if the shell return code of the command is not `0`.
-                                Runner default: `True`.
+                Runner default: `True`.
             verify_stderr: Whether to raise an exception if anything was written to stderr during the execution.
-                           Runner default: `False`.
-            use_signal_names:  Whether to log the name of the signal that killed the command (negative return code),
-                               in case of result verification failure.
-                               Runner default: `True`.
-
-            Command execution configuration:
-            ------------------------------
+                Runner default: `False`.
+            use_signal_names: Whether to log the name of the signal that killed the command (negative return code),
+                in case of result verification failure.
+                Runner default: `True`.
             env: Environment variables to set during the execution of the command (in addition to those of the parent
-                 process, which will also be available to the subprocess).
+                process, which will also be available to the subprocess).
             exec_dir: Custom path to execute the command in.
-                      Runner default: `None`, which uses the current directory.
+                Default: `None`, which uses the current directory.
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
-                      This allows capturing all characters from the command output, including cursor movement and
-                      colors. This can be useful when the command is an interactive shell, like `psql`.
-                      Supported for both string and list arguments; the command is always run through a shell.
-                      Supported on Linux and macOS, raises `ShpyxOSNotSupportedError` on any other system.
-                      Runner default: `False`.
+                This allows capturing all characters from the command output, including cursor movement and
+                colors. This can be useful when the command is an interactive shell, like `psql`.
+                Supported for both string and list arguments; the command is always run through a shell.
+                Supported on Linux and macOS, raises `ShpyxOSNotSupportedError` on any other system.
+                Default: `False`.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
-                             Runner default: `None`, which uses the default decoder factory.
+                Runner default: UTF-8, replacing invalid bytes.
 
         Returns:
             The result, as a `ShellCmdResult` object.
 
         Raises:
+            ShpyxVerificationError: The command failed one of the enabled result verifications.
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
