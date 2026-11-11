@@ -6,19 +6,19 @@ requires = ["hatchling", "hatch-vcs"]
 dev = [
   "coverage-conditional-plugin==0.9.0",
   "httpx==0.28.1",
-  "mypy==2.4.0",
-  "prek==0.5.7",
+  "mypy==2.4.1",
+  "prek==0.5.10",
   "pytest-cov==7.1.0",
   "pytest-mock==3.17.0",
-  "pytest==9.1.1",
-  "ruff==0.17.2",
-  "ty==0.0.91",
-  "types-psutil==7.2.2.20260906",
+  "pytest==9.2.0",
+  "ruff==0.17.4",
+  "ty==0.0.101",
+  "types-psutil==7.2.2.20261111",
 ]
 docs = [
   #
   "mkdocstrings-python==2.0.10",
-  "zensical==0.0.71",
+  "zensical==0.1.1",
 ]
 
 [project]
