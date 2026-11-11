@@ -1,3 +1,3 @@
-# Configuration for unref (https://github.com/Apakottur/unref).
-#
-# unref does not read a configuration file yet, so this file is a placeholder and is not passed to the hook.
+[[overrides]]
+paths = ["../tests"]
+used-names = ["test_*"]
