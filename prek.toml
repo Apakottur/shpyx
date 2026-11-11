@@ -99,3 +99,11 @@ args = ["--config", "./linters/ruff.toml"]
 [[repos.hooks]]
 id = "ruff-format"
 args = ["--config", "./linters/ruff.toml"]
+
+[[repos]]
+repo = "https://github.com/Apakottur/unref"
+rev = "v0.0.2"
+
+[[repos.hooks]]
+id = "unref"
+args = ["--config", "./linters/unref.toml"]

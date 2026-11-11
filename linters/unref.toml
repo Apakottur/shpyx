@@ -1,0 +1,3 @@
+[[overrides]]
+paths = ["../tests"]
+used-names = ["test_*"]
