@@ -29,7 +29,7 @@ authors = [{ name = "Yossi Rozantsev" }]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.11"
-keywords = ["shell", "bash", "terminal", "script"]
+keywords = ["shell", "bash", "terminal", "script", "subprocess", "cli"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -41,6 +41,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
 ]
 dependencies = ["psutil>=7"]
 
