@@ -25,7 +25,7 @@ id = "check-added-large-files"
 
 [[repos]]
 repo = "https://github.com/streetsidesoftware/cspell-cli"
-rev = "v10.4.0"
+rev = "v10.4.1"
 
 [[repos.hooks]]
 id = "cspell"
@@ -55,7 +55,7 @@ id = "actionlint"
 ########
 [[repos]]
 repo = "https://github.com/pappasam/toml-sort"
-rev = "v0.25.0"
+rev = "v0.26.0"
 
 [[repos.hooks]]
 id = "toml-sort"
@@ -90,7 +90,7 @@ args = ["--config-file", "./linters/yamllint.yaml"]
 ##########
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.17.4"
+rev = "v0.17.5"
 
 [[repos.hooks]]
 id = "ruff-check"
@@ -102,8 +102,7 @@ args = ["--config", "./linters/ruff.toml"]
 
 [[repos]]
 repo = "https://github.com/Apakottur/unref"
-rev = "v0.0.2"
+rev = "v0.2.1"
 
 [[repos.hooks]]
 id = "unref"
-args = ["--config", "./linters/unref.toml"]
