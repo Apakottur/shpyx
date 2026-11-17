@@ -9,7 +9,7 @@ all = "error"
 unsupported-dynamic-base = "ignore"
 missing-override-decorator = "ignore"
 unsound-assignment = "ignore"
-unsound-return-statement = "ignore"
+unsound-return = "ignore"
 unsound-yield = "ignore"
 
 [analysis]

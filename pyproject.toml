@@ -7,17 +7,17 @@ dev = [
   "coverage-conditional-plugin==0.9.0",
   "httpx==0.28.1",
   "mypy==2.4.1",
-  "prek==0.5.10",
+  "prek==0.5.11",
   "pytest-cov==7.1.0",
   "pytest-mock==3.17.0",
   "pytest==9.2.0",
-  "ruff==0.17.4",
-  "ty==0.0.101",
+  "ruff==0.17.5",
+  "ty==0.0.105",
   "types-psutil==7.2.2.20261111",
 ]
 docs = [
   #
-  "mkdocstrings-python==2.0.10",
+  "mkdocstrings-python==2.0.11",
   "zensical==0.1.1",
 ]
 
