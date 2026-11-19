@@ -70,7 +70,7 @@ class Runner:
         verify_stderr: bool | None = None,
         use_signal_names: bool | None = None,
         # Command execution configuration.
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, str | None] | None = None,
         exec_dir: Path | str | None = None,
         unix_raw: bool = False,
         decoder_factory: DecoderFactory | None = None,
@@ -93,7 +93,8 @@ class Runner:
                 in case of result verification failure.
                 Runner default: `True`.
             env: Environment variables to set during the execution of the command (in addition to those of the parent
-                process, which will also be available to the subprocess).
+                process, which will also be available to the subprocess). A value of `None` removes the variable from
+                the subprocess environment, if the parent process has it.
             exec_dir: Custom path to execute the command in.
                 Default: `None`, which uses the current directory.
             unix_raw: (UNIX ONLY) Whether to use the `script` Unix utility to run the command.
