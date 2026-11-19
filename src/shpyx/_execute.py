@@ -62,6 +62,13 @@ def _log(msg: str) -> None:
     sys.stdout.flush()
 
 
+def _env_var_key(name: str) -> str:
+    """
+    Get the key used to compare environment variable names, which are case-insensitive on Windows.
+    """
+    return name.upper() if SYSTEM == System.WINDOWS else name
+
+
 def execute(
     args: str | Sequence[str | os.PathLike[str]],
     *,
@@ -107,12 +114,7 @@ def execute(
         # The provided env vars take precedence over existing ones, and a `None` value removes the variable.
         for name, value in env.items():
             if value is None:
-                # Variable names are case-insensitive on Windows.
-                if SYSTEM == System.WINDOWS:
-                    for existing in [k for k in cmd_env if k.upper() == name.upper()]:
-                        del cmd_env[existing]
-                else:
-                    cmd_env.pop(name, None)
+                cmd_env = {k: v for k, v in cmd_env.items() if _env_var_key(k) != _env_var_key(name)}
             else:
                 cmd_env[name] = value
 
