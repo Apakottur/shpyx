@@ -11,7 +11,8 @@ This allows logging the live output, keeps the order of the combined output (`al
 command fills one pipe while shpyx waits on the other.
 
 A `KeyboardInterrupt` (CTRL-C), or any other exception raised during the run, stops it promptly and kills the subprocess
-along with all of its descendants (e.g. every command of a shell pipeline).
+along with all of its descendants (e.g. every command of a shell pipeline). A `timeout` kills them the same way, then
+raises [`ShpyxTimeoutError`](reference/api.md#shpyx.ShpyxTimeoutError).
 
 shpyx supports Linux, macOS and Windows. Other systems (e.g. FreeBSD) are treated as generic POSIX systems: `run` works
 as usual, but `unix_raw` raises [`ShpyxOSNotSupportedError`](reference/api.md#shpyx.ShpyxOSNotSupportedError).

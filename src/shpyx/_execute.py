@@ -7,11 +7,12 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
 from typing import TYPE_CHECKING
 
 import psutil
 
-from shpyx._errors import ShpyxInternalError
+from shpyx._errors import ShpyxInternalError, ShpyxTimeoutError
 from shpyx._output import OutputStream, read_stream
 from shpyx._result import ShellCmdResult
 from shpyx._system import SYSTEM, System, get_unix_raw_cmd
@@ -38,20 +39,26 @@ class Process(subprocess.Popen[bytes]):
         traceback: TracebackType | None,
     ) -> None:
         # On an exception (including `KeyboardInterrupt`), kill the child process instead of waiting for it to finish.
-        # Its descendants are killed as well, since otherwise they are left running (e.g. the commands of a shell).
         if exc_type is not None:
-            # Collect the descendants before killing the child, as they are re-parented once it exits.
-            # A failure here must not hide the original exception, so the descendants are then left running.
-            descendants: list[psutil.Process] = []
-            with contextlib.suppress(psutil.Error):
-                descendants = psutil.Process(self.pid).children(recursive=True)
-
-            self.kill()
-            for descendant in descendants:
-                with contextlib.suppress(psutil.Error):
-                    descendant.kill()
+            self.kill_tree()
             self.wait()
         super().__exit__(exc_type, value, traceback)
+
+    def kill_tree(self) -> None:
+        """
+        Kill the child process along with its descendants, since otherwise they are left running (e.g. the commands of
+        a shell), and may keep the output pipes open.
+        """
+        # Collect the descendants before killing the child, as they are re-parented once it exits.
+        # A failure here must not hide an original exception, so the descendants are then left running.
+        descendants: list[psutil.Process] = []
+        with contextlib.suppress(psutil.Error):
+            descendants = psutil.Process(self.pid).children(recursive=True)
+
+        self.kill()
+        for descendant in descendants:
+            with contextlib.suppress(psutil.Error):
+                descendant.kill()
 
 
 def _log(msg: str) -> None:
@@ -81,6 +88,7 @@ def execute(
     exec_dir: Path | str | None,
     unix_raw: bool,
     decoder_factory: DecoderFactory,
+    timeout: float | None,
 ) -> ShellCmdResult:
     """
     Run a shell command, with a fully resolved configuration (see `Runner.run`).
@@ -89,6 +97,7 @@ def execute(
         ShpyxOSNotSupportedError: The current OS is not supported for this operation.
         ShpyxInternalError: Internal error when executing the command.
         ShpyxVerificationError: If verification failed.
+        ShpyxTimeoutError: If the command did not finish within the timeout.
     """
     # The command as a single string, used for logging and in the result.
     if isinstance(args, str):
@@ -158,9 +167,18 @@ def execute(
         for stream_id, stream in enumerate((p.stdout, p.stderr)):
             threading.Thread(target=read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
+        deadline = None if timeout is None else time.monotonic() + timeout
+        timed_out = False
+
         streams = (stdout, stderr)
         open_streams = len(streams)
         while open_streams:
+            # Once the time is up, kill the command, and keep reading the output written so far until the streams close.
+            if deadline is not None and time.monotonic() >= deadline:
+                p.kill_tree()
+                deadline = None
+                timed_out = True
+
             # Wait with a timeout, since an indefinite wait can not be interrupted (e.g. by CTRL-C) on Windows.
             try:
                 stream_id, chunk = chunks.get(timeout=_INTERRUPT_CHECK_INTERVAL)
@@ -184,6 +202,10 @@ def execute(
 
     # Save return code (the process context manager waits for the process to exit).
     result.return_code = p.returncode
+
+    if timed_out:
+        reason = f"The command '{result.cmd}' timed out after {timeout} seconds.\n\nAll output:\n{result.all_output}"
+        raise ShpyxTimeoutError(reason=reason, result=result)
 
     # Verify that the command result is valid, based on the verification configuration.
     verify_result(
