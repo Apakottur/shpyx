@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from shpyx._execute import execute
 from shpyx._output import default_decoder_factory
@@ -14,10 +14,12 @@ if TYPE_CHECKING:
     from shpyx._result import ShellCmdResult
 
 
-def _is_action_required(*, user: bool | None, default: bool) -> bool:
+_T = TypeVar("_T")
+
+
+def _resolve(user: _T | None, default: _T) -> _T:
     """
-    Returns whether an action needs to be done, based on whether the user required it and the default value of the
-    runner.
+    Returns the value of a setting, which is the one passed by the user, or the default of the runner if it is `None`.
     """
     return default if user is None else user
 
@@ -124,16 +126,16 @@ class Runner:
         """
         return execute(
             args,
-            log_cmd=_is_action_required(user=log_cmd, default=self._log_cmd),
-            log_output=_is_action_required(user=log_output, default=self._log_output),
-            verify_return_code=_is_action_required(user=verify_return_code, default=self._verify_return_code),
-            verify_stderr=_is_action_required(user=verify_stderr, default=self._verify_stderr),
-            use_signal_names=_is_action_required(user=use_signal_names, default=self._use_signal_names),
-            timeout=self._timeout if timeout is None else timeout,
+            log_cmd=_resolve(log_cmd, self._log_cmd),
+            log_output=_resolve(log_output, self._log_output),
+            verify_return_code=_resolve(verify_return_code, self._verify_return_code),
+            verify_stderr=_resolve(verify_stderr, self._verify_stderr),
+            use_signal_names=_resolve(use_signal_names, self._use_signal_names),
+            timeout=_resolve(timeout, self._timeout),
             env=env,
             exec_dir=exec_dir,
             unix_raw=unix_raw,
-            decoder_factory=decoder_factory or self._decoder_factory,
+            decoder_factory=_resolve(decoder_factory, self._decoder_factory),
         )
 
 
