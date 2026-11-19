@@ -28,11 +28,6 @@ if TYPE_CHECKING:
 # The maximal time (in seconds) to wait for output before checking for a pending interrupt (e.g. CTRL-C).
 _INTERRUPT_CHECK_INTERVAL = 0.1
 
-# The maximal time (in seconds) to wait for the output streams to close after killing a command on a timeout.
-# The streams normally close as soon as the command and its descendants are killed, but a process that escaped the
-# process tree (e.g. a daemon) can keep them open forever.
-_TIMEOUT_KILL_GRACE = 1.0
-
 
 class Process(subprocess.Popen[bytes]):
     """Custom child process, with additional cleanup on exit."""
@@ -161,31 +156,21 @@ def execute(
         for stream_id, stream in enumerate((p.stdout, p.stderr)):
             threading.Thread(target=read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
-        # The time at which the command is killed (if it has a timeout), and then the time to stop waiting for its
-        # output streams to close.
         deadline = None if timeout is None else time.monotonic() + timeout
         timed_out = False
 
         streams = (stdout, stderr)
         open_streams = len(streams)
         while open_streams:
-            wait_time = _INTERRUPT_CHECK_INTERVAL
-            if deadline is not None:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    if timed_out:
-                        # The output streams are held open by a process outside the killed tree, so stop reading.
-                        break
-                    # Kill the command, then keep reading the output written up to now, until the streams close.
-                    p.kill_tree()
-                    timed_out = True
-                    deadline = time.monotonic() + _TIMEOUT_KILL_GRACE
-                    continue
-                wait_time = min(wait_time, remaining)
+            # Once the time is up, kill the command, and keep reading the output written so far until the streams close.
+            if deadline is not None and time.monotonic() >= deadline:
+                p.kill_tree()
+                deadline = None
+                timed_out = True
 
             # Wait with a timeout, since an indefinite wait can not be interrupted (e.g. by CTRL-C) on Windows.
             try:
-                stream_id, chunk = chunks.get(timeout=wait_time)
+                stream_id, chunk = chunks.get(timeout=_INTERRUPT_CHECK_INTERVAL)
             except queue.Empty:
                 continue
 
