@@ -14,7 +14,7 @@ import psutil
 from shpyx._errors import ShpyxInternalError
 from shpyx._output import OutputStream, read_stream
 from shpyx._result import ShellCmdResult
-from shpyx._system import get_unix_raw_cmd
+from shpyx._system import SYSTEM, System, get_unix_raw_cmd
 from shpyx._verify import verify_result
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ def execute(
     verify_return_code: bool,
     verify_stderr: bool,
     use_signal_names: bool,
-    env: Mapping[str, str] | None,
+    env: Mapping[str, str | None] | None,
     exec_dir: Path | str | None,
     unix_raw: bool,
     decoder_factory: DecoderFactory,
@@ -104,8 +104,17 @@ def execute(
     # Build the command environment variables.
     cmd_env = os.environ.copy()
     if env is not None:
-        # The provided env vars will take precedence over existing ones.
-        cmd_env = {**cmd_env, **env}
+        # The provided env vars take precedence over existing ones, and a `None` value removes the variable.
+        for name, value in env.items():
+            if value is None:
+                # Variable names are case-insensitive on Windows.
+                if SYSTEM == System.WINDOWS:
+                    for existing in [k for k in cmd_env if k.upper() == name.upper()]:
+                        del cmd_env[existing]
+                else:
+                    cmd_env.pop(name, None)
+            else:
+                cmd_env[name] = value
 
     # Prepare the execution path.
     if exec_dir is not None:

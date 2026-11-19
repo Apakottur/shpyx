@@ -24,6 +24,6 @@ The following arguments are supported by `run` only:
 
 | Name       | Description                                                            | Default                  |
 | ---------- | ---------------------------------------------------------------------- | ------------------------ |
-| `env`      | Environment variables to set during the execution of the command.      | `Same as parent process` |
+| `env`      | Environment variables to set (or remove, with `None`) for the command.  | `Same as parent process` |
 | `exec_dir` | Custom path to execute the command in (defaults to current directory). | `Same as parent process` |
 | `unix_raw` | (Linux/macOS only) Use the `script` Unix utility to run the command.   | `False`                  |

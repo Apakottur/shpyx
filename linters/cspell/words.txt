@@ -45,3 +45,4 @@ Apakottur
 lucide
 mkdocstrings
 unref
+delenv

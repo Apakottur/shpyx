@@ -38,6 +38,16 @@ For example, the pipe operator can be used in bash/sh:
 ShellCmdResult(cmd="seq 1 5 | grep '2'", stdout='2\n', stderr='', all_output='2\n', return_code=0)
 ```
 
+## Set or remove environment variables
+
+The command inherits the environment variables of the parent process. Use `env` to set or override variables, and
+a value of `None` to remove a variable:
+
+```python
+>>> shpyx.run("echo $GREETING $VIRTUAL_ENV", env={"GREETING": "hello", "VIRTUAL_ENV": None})
+ShellCmdResult(cmd='echo $GREETING $VIRTUAL_ENV', stdout='hello\n', stderr='', all_output='hello\n', return_code=0)
+```
+
 ## Handle a failed command
 
 By default, `run` raises [`ShpyxVerificationError`](reference/api.md#shpyx.ShpyxVerificationError) when the command

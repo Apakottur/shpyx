@@ -103,6 +103,28 @@ def test_env() -> None:
     verify_result(result, return_code=0, stdout=f"20{SEP}", stderr="")
 
 
+def test_env_remove(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove an environment variable of the parent process from the subprocess"""
+    monkeypatch.setenv("MY_PARENT_VAR", "parent")
+    monkeypatch.delenv("MY_MISSING_VAR", raising=False)
+    cmd = [
+        sys.executable,
+        "-c",
+        "import os; print(os.environ.get('MY_PARENT_VAR'), os.environ.get('MY_MISSING_VAR'), os.environ.get('MY_VAR'))",
+    ]
+
+    # The parent's variables are inherited by default.
+    result = shpyx.run(cmd)
+    verify_result(result, return_code=0, stdout=f"parent None None{SEP}", stderr="")
+
+    # A `None` value removes the variable, and is ignored if the parent doesn't have it. Other values are still set.
+    result = shpyx.run(cmd, env={"MY_PARENT_VAR": None, "MY_MISSING_VAR": None, "MY_VAR": "10"})
+    verify_result(result, return_code=0, stdout=f"None None 10{SEP}", stderr="")
+
+    # The parent process environment is not modified.
+    assert os.environ["MY_PARENT_VAR"] == "parent"
+
+
 def test_exec_dir() -> None:
     """Execute a command from a different directory"""
     with tempfile.TemporaryDirectory() as temp_dir:
