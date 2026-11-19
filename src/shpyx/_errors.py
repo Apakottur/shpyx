@@ -26,6 +26,24 @@ class ShpyxVerificationError(ShpyxError):
         """
 
 
+class ShpyxTimeoutError(ShpyxError):
+    """
+    The execution of a shell command did not finish within its timeout, so it was killed.
+    """
+
+    def __init__(self, reason: str, result: ShellCmdResult) -> None:
+        super().__init__(reason)
+        self.reason = reason
+        """
+        The reason for the error, naming the timeout.
+        """
+
+        self.result = result
+        """
+        The partial result of the command, with the output written before it was killed.
+        """
+
+
 class ShpyxInternalError(ShpyxError):
     """
     An internal error during execution of the shell command.

@@ -18,6 +18,8 @@ Everything below is importable from the top-level `shpyx` package.
 
 ::: shpyx.ShpyxVerificationError
 
+::: shpyx.ShpyxTimeoutError
+
 ::: shpyx.ShpyxInternalError
 
 ::: shpyx.ShpyxOSNotSupportedError

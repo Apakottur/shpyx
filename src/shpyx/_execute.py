@@ -7,11 +7,12 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
 from typing import TYPE_CHECKING
 
 import psutil
 
-from shpyx._errors import ShpyxInternalError
+from shpyx._errors import ShpyxInternalError, ShpyxTimeoutError
 from shpyx._output import OutputStream, read_stream
 from shpyx._result import ShellCmdResult
 from shpyx._system import get_unix_raw_cmd
@@ -27,6 +28,11 @@ if TYPE_CHECKING:
 # The maximal time (in seconds) to wait for output before checking for a pending interrupt (e.g. CTRL-C).
 _INTERRUPT_CHECK_INTERVAL = 0.1
 
+# The maximal time (in seconds) to wait for the output streams to close after killing a command on a timeout.
+# The streams normally close as soon as the command and its descendants are killed, but a process that escaped the
+# process tree (e.g. a daemon) can keep them open forever.
+_TIMEOUT_KILL_GRACE = 1.0
+
 
 class Process(subprocess.Popen[bytes]):
     """Custom child process, with additional cleanup on exit."""
@@ -38,20 +44,26 @@ class Process(subprocess.Popen[bytes]):
         traceback: TracebackType | None,
     ) -> None:
         # On an exception (including `KeyboardInterrupt`), kill the child process instead of waiting for it to finish.
-        # Its descendants are killed as well, since otherwise they are left running (e.g. the commands of a shell).
         if exc_type is not None:
-            # Collect the descendants before killing the child, as they are re-parented once it exits.
-            # A failure here must not hide the original exception, so the descendants are then left running.
-            descendants: list[psutil.Process] = []
-            with contextlib.suppress(psutil.Error):
-                descendants = psutil.Process(self.pid).children(recursive=True)
-
-            self.kill()
-            for descendant in descendants:
-                with contextlib.suppress(psutil.Error):
-                    descendant.kill()
+            self.kill_tree()
             self.wait()
         super().__exit__(exc_type, value, traceback)
+
+    def kill_tree(self) -> None:
+        """
+        Kill the child process along with its descendants, since otherwise they are left running (e.g. the commands of
+        a shell), and may keep the output pipes open.
+        """
+        # Collect the descendants before killing the child, as they are re-parented once it exits.
+        # A failure here must not hide an original exception, so the descendants are then left running.
+        descendants: list[psutil.Process] = []
+        with contextlib.suppress(psutil.Error):
+            descendants = psutil.Process(self.pid).children(recursive=True)
+
+        self.kill()
+        for descendant in descendants:
+            with contextlib.suppress(psutil.Error):
+                descendant.kill()
 
 
 def _log(msg: str) -> None:
@@ -74,6 +86,7 @@ def execute(
     exec_dir: Path | str | None,
     unix_raw: bool,
     decoder_factory: DecoderFactory,
+    timeout: float | None,
 ) -> ShellCmdResult:
     """
     Run a shell command, with a fully resolved configuration (see `Runner.run`).
@@ -82,6 +95,7 @@ def execute(
         ShpyxOSNotSupportedError: The current OS is not supported for this operation.
         ShpyxInternalError: Internal error when executing the command.
         ShpyxVerificationError: If verification failed.
+        ShpyxTimeoutError: If the command did not finish within the timeout.
     """
     # The command as a single string, used for logging and in the result.
     if isinstance(args, str):
@@ -147,12 +161,31 @@ def execute(
         for stream_id, stream in enumerate((p.stdout, p.stderr)):
             threading.Thread(target=read_stream, args=(stream, stream_id, chunks), daemon=True).start()
 
+        # The time at which the command is killed (if it has a timeout), and then the time to stop waiting for its
+        # output streams to close.
+        deadline = None if timeout is None else time.monotonic() + timeout
+        timed_out = False
+
         streams = (stdout, stderr)
         open_streams = len(streams)
         while open_streams:
+            wait_time = _INTERRUPT_CHECK_INTERVAL
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    if timed_out:
+                        # The output streams are held open by a process outside the killed tree, so stop reading.
+                        break
+                    # Kill the command, then keep reading the output written up to now, until the streams close.
+                    p.kill_tree()
+                    timed_out = True
+                    deadline = time.monotonic() + _TIMEOUT_KILL_GRACE
+                    continue
+                wait_time = min(wait_time, remaining)
+
             # Wait with a timeout, since an indefinite wait can not be interrupted (e.g. by CTRL-C) on Windows.
             try:
-                stream_id, chunk = chunks.get(timeout=_INTERRUPT_CHECK_INTERVAL)
+                stream_id, chunk = chunks.get(timeout=wait_time)
             except queue.Empty:
                 continue
 
@@ -173,6 +206,10 @@ def execute(
 
     # Save return code (the process context manager waits for the process to exit).
     result.return_code = p.returncode
+
+    if timed_out:
+        reason = f"The command '{result.cmd}' timed out after {timeout} seconds.\n\nAll output:\n{result.all_output}"
+        raise ShpyxTimeoutError(reason=reason, result=result)
 
     # Verify that the command result is valid, based on the verification configuration.
     verify_result(

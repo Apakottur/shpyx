@@ -17,6 +17,7 @@ for that call only.
 | `verify_stderr`      | Raise an exception if anything was written to stderr during the execution. | `False` |
 | `use_signal_names`   | Log the name of the signal that killed the command, if any.                | `True`  |
 | `decoder_factory`    | Factory of the incremental decoder used to decode the output.              | `UTF-8` |
+| `timeout`            | The time limit (in seconds) of the command, `None` for no limit.           | `None`  |
 
 ## Per-command options
 

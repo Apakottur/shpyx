@@ -36,6 +36,7 @@ class Runner:
         verify_stderr: bool = False,
         use_signal_names: bool = True,
         decoder_factory: DecoderFactory = default_decoder_factory,
+        timeout: float | None = None,
     ) -> None:
         """
         Create a command runner.
@@ -51,6 +52,8 @@ class Runner:
             use_signal_names: Whether to log the name of the signal that killed the command (negative return code),
                 in case of result verification failure.
             decoder_factory: Callable that returns a fresh incremental decoder, used to decode the command output.
+            timeout: The maximal time (in seconds) the command may run. Once it is up, the command is killed (along
+                with all of its descendants) and `ShpyxTimeoutError` is raised. `None` means no time limit.
         """
         self._log_cmd = log_cmd
         self._log_output = log_output
@@ -58,6 +61,7 @@ class Runner:
         self._verify_stderr = verify_stderr
         self._use_signal_names = use_signal_names
         self._decoder_factory = decoder_factory
+        self._timeout = timeout
 
     def run(
         self,
@@ -69,6 +73,7 @@ class Runner:
         verify_return_code: bool | None = None,
         verify_stderr: bool | None = None,
         use_signal_names: bool | None = None,
+        timeout: float | None = None,
         # Command execution configuration.
         env: Mapping[str, str] | None = None,
         exec_dir: Path | str | None = None,
@@ -92,6 +97,9 @@ class Runner:
             use_signal_names: Whether to log the name of the signal that killed the command (negative return code),
                 in case of result verification failure.
                 Runner default: `True`.
+            timeout: The maximal time (in seconds) the command may run. Once it is up, the command is killed (along
+                with all of its descendants) and `ShpyxTimeoutError` is raised, holding the output written so far.
+                Runner default: `None` (no time limit).
             env: Environment variables to set during the execution of the command (in addition to those of the parent
                 process, which will also be available to the subprocess).
             exec_dir: Custom path to execute the command in.
@@ -110,6 +118,7 @@ class Runner:
 
         Raises:
             ShpyxVerificationError: The command failed one of the enabled result verifications.
+            ShpyxTimeoutError: The command did not finish within the timeout.
             ShpyxOSNotSupportedError: The current OS is not supported for this operation.
             ShpyxInternalError: Internal error when executing the command.
         """
@@ -120,6 +129,7 @@ class Runner:
             verify_return_code=_is_action_required(user=verify_return_code, default=self._verify_return_code),
             verify_stderr=_is_action_required(user=verify_stderr, default=self._verify_stderr),
             use_signal_names=_is_action_required(user=use_signal_names, default=self._use_signal_names),
+            timeout=self._timeout if timeout is None else timeout,
             env=env,
             exec_dir=exec_dir,
             unix_raw=unix_raw,

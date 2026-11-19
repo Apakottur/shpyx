@@ -177,3 +177,92 @@ def test_large_stderr_before_stdout() -> None:
     assert not thread.is_alive(), "The command deadlocked"
 
     verify_result(results[0], stdout="o" * size, stderr="e" * size)
+
+
+def test_timeout_not_reached() -> None:
+    """A command that finishes within its timeout returns as usual"""
+    result = shpyx.run([sys.executable, "-c", "print(1)"], timeout=30)
+    verify_result(result, stdout="1\n")
+
+
+@pytest.mark.parametrize("verify_return_code", [True, False])
+def test_timeout_kills_command(*, verify_return_code: bool) -> None:
+    """A command that runs past its timeout is killed, and the error holds the output written so far"""
+    start = time.monotonic()
+    with pytest.raises(shpyx.ShpyxTimeoutError) as exc:
+        shpyx.run(
+            [sys.executable, "-c", "import time; print('partial', flush=True); time.sleep(30)"],
+            timeout=1,
+            verify_return_code=verify_return_code,
+        )
+
+    assert time.monotonic() - start < 10
+    assert isinstance(exc.value, shpyx.ShpyxError)
+    assert exc.value.result.stdout.strip() == "partial"
+    assert exc.value.result.return_code != 0
+    assert "timed out after 1 seconds" in str(exc.value)
+    assert "partial" in exc.value.reason
+
+
+def test_runner_timeout() -> None:
+    """The timeout of a runner applies to its commands, and can be overridden per command"""
+    runner = shpyx.Runner(timeout=0.5)
+    cmd = [sys.executable, "-c", "import time; time.sleep(1)"]
+
+    with pytest.raises(shpyx.ShpyxTimeoutError):
+        runner.run(cmd)
+
+    verify_result(runner.run(cmd, timeout=30))
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        # A shell pipeline, where the process printing the PID is a child of the shell, and holds the stdout pipe.
+        f'"{sys.executable}" -c "{_PRINT_PID_AND_SLEEP}" | "{sys.executable}" -c "import sys; '
+        "[print(line, end='', flush=True) for line in sys.stdin]\"",
+        # A process printing the PID of its own child, and waiting for it.
+        [
+            sys.executable,
+            "-c",
+            f"import subprocess, sys; subprocess.run([sys.executable, '-c', {_PRINT_PID_AND_SLEEP!r}])",
+        ],
+    ],
+)
+def test_timeout_kills_descendants(args: str | list[str]) -> None:
+    """A timeout kills the descendants of the command as well, which would otherwise keep the output pipes open"""
+    start = time.monotonic()
+    with pytest.raises(shpyx.ShpyxTimeoutError) as exc:
+        shpyx.run(args, timeout=2)
+
+    # The streams closed once the descendants were killed, rather than waiting for them to finish.
+    assert time.monotonic() - start < 10
+
+    # The grandchild is killed asynchronously, so wait for it to exit (raises on a timeout).
+    with contextlib.suppress(psutil.NoSuchProcess):
+        psutil.Process(int(exc.value.result.stdout)).wait(timeout=10)
+
+
+def test_timeout_streams_held_open(mocker: pytest_mock.MockerFixture) -> None:
+    """A process outside the killed tree that keeps the output pipes open does not block the timeout"""
+    # Simulate such a process by killing only the direct child, leaving its child running (and holding the pipes).
+    mocker.patch.object(Process, "kill_tree", Process.kill)
+    mocker.patch("shpyx._execute._TIMEOUT_KILL_GRACE", 0.5)
+
+    start = time.monotonic()
+    with pytest.raises(shpyx.ShpyxTimeoutError) as exc:
+        shpyx.run(
+            [
+                sys.executable,
+                "-c",
+                f"import subprocess, sys; subprocess.run([sys.executable, '-c', {_PRINT_PID_AND_SLEEP!r}])",
+            ],
+            timeout=1,
+        )
+    elapsed = time.monotonic() - start
+
+    # Kill the grandchild, so it is not left running.
+    with contextlib.suppress(psutil.NoSuchProcess):
+        psutil.Process(int(exc.value.result.stdout)).kill()
+
+    assert elapsed < 10

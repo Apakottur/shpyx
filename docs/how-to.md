@@ -58,6 +58,22 @@ To inspect the return code yourself instead, disable the verification:
 3
 ```
 
+## Limit the run time of a command
+
+Pass a `timeout` (in seconds) to kill a command that runs for too long. `run` then raises
+[`ShpyxTimeoutError`](reference/api.md#shpyx.ShpyxTimeoutError), which holds the output written before the command was
+killed:
+
+```python
+>>> try:
+...     shpyx.run("echo started; sleep 60", timeout=1)
+... except shpyx.ShpyxTimeoutError as e:
+...     print(e.result.stdout)
+started
+```
+
+The command is killed along with all of its descendants (e.g. every command of a shell pipeline).
+
 ## Create a custom runner
 
 Use a custom [`Runner`](reference/api.md#shpyx.Runner) to override the execution defaults, and not have to pass them to
