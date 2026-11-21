@@ -101,7 +101,7 @@ id = "ruff-format"
 args = ["--config", "./linters/ruff.toml"]
 
 [[repos]]
-repo = "https://github.com/Apakottur/unref"
+repo = "https://github.com/Apakottur/unref-pre-commit"
 rev = "v0.4.0"
 
 [[repos.hooks]]
