@@ -11,14 +11,14 @@ dev = [
   "pytest-cov==7.1.0",
   "pytest-mock==3.17.0",
   "pytest==9.2.0",
-  "ruff==0.17.5",
-  "ty==0.0.105",
+  "ruff==0.17.6",
+  "ty==0.0.107",
   "types-psutil==7.2.2.20261111",
 ]
 docs = [
   #
   "mkdocstrings-python==2.0.11",
-  "zensical==0.1.1",
+  "zensical==0.1.3",
 ]
 
 [project]
